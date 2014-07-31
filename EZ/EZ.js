@@ -2705,8 +2705,10 @@ EZ.window = function(options){
             __window.window.elem.style['top'] = '40%';
             __window.window.elem.style['opacity'] = '0';
             setTimeout(function(){
-                document.body.removeChild(__window.window.elem);
-                __window.window.elem.style['visibility'] = 'hidden';
+                if(__window.window.elem.parentNode == document.body){
+                    document.body.removeChild(__window.window.elem);
+                    __window.window.elem.style['visibility'] = 'hidden';
+                }
             },500);
             
         }
@@ -2751,8 +2753,10 @@ EZ.window = function(options){
         },
         hide : function(){
             __window.mask.elem.style.opacity='0';
-            setTimeout(function(){
-                document.body.removeChild(__window.mask.elem);
+            setTimeout(function(){ 
+                if(__window.mask.elem.parentNode == document.body){
+                    document.body.removeChild(__window.mask.elem);
+                }
             },1000);
             
         }
