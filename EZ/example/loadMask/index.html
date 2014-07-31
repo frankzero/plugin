@@ -1,0 +1,89 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html>
+<head>
+<title>loadMask</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<link rel="stylesheet" type="text/css" href="http://img.sog88.net/share/plugin/EZ/css/EZ.css" />
+<script type="text/javascript" src="http://img.sog88.net/share/plugin/pub_library.js"></script>
+<style type="text/css">
+<!--
+#content{
+	padding-bottom:5px;
+	padding-left:5px;
+	width:200px;
+	padding-right:5px;
+	padding-top:5px;
+	border:1px solid #000;
+}
+.block{
+	border-bottom:1px dotted #000 ;
+	margin-top:20px;
+}
+-->
+</style>
+<script type="text/javascript">
+var mask;
+window.onload = function() {
+	
+}
+function process(render)
+{
+	if(render=='body'){
+		mask = new EZ.loadMask({'renderTo':'body','backgroundColor':'#000'});
+		mask.show('',3000);
+	}else{
+		mask = new EZ.loadMask({'renderTo':render});
+		mask.show('請稍後...');
+	}
+	
+}
+function process2(){
+	var opacity = document.getElementById('opacity').value;
+	var backgroundColor = document.getElementById('backgroundColor').value;
+	var zIndex = document.getElementById('zIndex').value;
+	var message = document.getElementById('message').value;
+	var imageUrl = document.getElementById('imageUrl').value;
+	
+	var inputs = document.getElementsByTagName('input');
+	var renderTo;
+	for(var i=0;i<inputs.length;i++){
+		var input = inputs[i];
+		if(input.getAttribute('type') == 'radio' && input.checked==true)
+		{
+			renderTo = input.value;
+			break;
+		}
+	}
+	mask = new EZ.loadMask({'renderTo':renderTo,'opacity':opacity,'backgroundColor':backgroundColor,'zIndex':zIndex,url:imageUrl});
+	mask.show(message,3000);
+}
+function cancel()
+{
+	mask.hide();
+}
+
+
+
+</script>
+</head>
+<body>
+	<div class="block">範例</div>
+	<div class="block">1.基本款 <input type="button" value="遮罩body 3秒後取消"  onclick="process('body')"> </div>
+	<div class="block">2. Please fill out the form: 設定 <br/>
+		<input type="text" id="opacity" value="60"> : 透明度 <br /> 
+		<input type="text" id="backgroundColor" value="#000"> : 顏色   <br />
+		<input type="text" id="zIndex" value="100"> : zIndex 同時存在2各遮罩 設定zIndex 決定誰在上層 <br />
+		<input type="text" id="message" value="請稍後..."> : 要顯示的訊息 空字串就自動換圖 <br />
+		<input type="text" id="imageUrl" value="../../images/ajax-loading2.gif"> : 中間那個轉圈圈的圖 url網址 ,當顯示的訊息為空值時 才有作用 (空字串為預設)<br />
+		<input type="radio" name="renderTo" value="body" checked> body
+		<input type="radio" name="renderTo" value="content"> 表單
+		<input type="button" value="遮罩3秒後取消"  onclick="process2();">
+		<div id="content">
+			<div>Field1: <input type="text"></div>
+			<div>Field2: <input type="text"></div>
+			<div>Field3: <input type="text"></div>
+			<div>Field4: <input type="text"></div>
+		</div>
+	</div>
+</body>
+</html>

@@ -1,0 +1,46 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html>
+<head>
+<title>Browser Detect</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<link rel="stylesheet" type="text/css" href="http://img.sog88.net/share/plugin/EZ/css/EZ.css" />
+<script type="text/javascript" src="http://img.sog88.net/share/plugin/pub_library.js"></script>
+<style type="text/css">
+<!--
+
+-->
+</style>
+<script type="text/javascript">
+
+window.onload = function() {
+	var a = [
+		"browser : "+EZ.System.browser
+		,"version : "+EZ.System.version
+		,"OS : "+EZ.System.OS
+		,"isIE : "+EZ.System.isIE
+		,"isChrome : "+EZ.System.isChrome
+		,"isFirefox : "+EZ.System.isFirefox
+		,"isSafari : "+EZ.System.isSafari
+		,"isOpera : "+EZ.System.isOpera
+		,"isMobile : "+EZ.System.isMobile
+		,"versionSearchString : "+EZ.System.versionSearchString
+	]
+	document.getElementById('result').innerHTML = a.join('<br />'); 
+}
+
+</script>
+</head>
+<body>
+		browser : EZ.System.browser <br />
+		version : EZ.System.version <br />
+		OS : EZ.System.OS <br />
+		isIE : EZ.System.isIE <br />
+		isChrome : EZ.System.isChrome <br />
+		isFirefox : EZ.System.isFirefox <br />
+		isSafari : EZ.System.isSafari <br />
+		isOpera : EZ.System.isOpera <br /> 
+		isMobile : EZ.System.isMobile <br />
+		versionSearchString : EZ.System.versionSearchString <br />
+		<div id="result"></div>
+</body>
+</html>

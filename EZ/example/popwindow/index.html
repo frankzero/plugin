@@ -1,0 +1,74 @@
+<!DOCTYPE html >
+<html>
+
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" /> 
+<title></title>
+<link rel="stylesheet" href="/plugin/css/normalize.css">
+<style>
+body{
+    background:#4682B4;
+}
+.main{
+    padding:20px;
+    background:#fff;
+    width:728px;
+    margin:20px auto;
+}
+div{
+    padding:5px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="main">
+    <a href="http://codepen.io/Frankzero/pen/weqhm?editors=001" target="_blank">codepen</a>
+
+    <div><button onclick="win.open('test');">open</button></div>
+    
+    <div><button onclick="win2.open('test2');">open2</button></div>
+
+    <h1>設定</h1>
+    <pre>
+    options = options || {};
+    options.window_style = options.window_style || {};
+    options.mask_style = options.mask_style || {};
+    options.content_style = options.content_style || {};
+    options.close_button_style = options.close_button_style || {};
+
+    options.onopen = function(e){
+        
+    }
+
+    options.onclose = function(e){
+        
+    }
+    </pre>
+</div>
+
+<script src="/plugin/EZ/EZ.js"></script>
+<script>
+var win;
+var win2;
+window.onload = function(){
+    make1();
+    make2();
+}
+
+function make1(){
+    win = new EZ.window();
+}
+
+function make2(){
+    var options = {};
+    options.window_style = {};
+    options.window_style['border-radius']='10px';
+    options.window_style['border-color']='red';
+    win2 = new EZ.window(options);
+    win2.close_button.elem.innerHTML = '<img src="/plugin/EZ/images/Close-icon.png" style="width:30px;" close_window="1">';
+}
+</script>
+</body>
+</html>

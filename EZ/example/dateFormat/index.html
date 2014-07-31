@@ -1,0 +1,39 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html>
+<head>
+<title>loadMask</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<link rel="stylesheet" type="text/css" href="http://img.sog88.net/share/plugin/EZ/css/EZ.css" />
+<script type="text/javascript" src="http://img.sog88.net/share/plugin/pub_library.js"></script>
+<style type="text/css">
+<!--
+span{
+	margin-left:20px;
+}
+-->
+</style>
+<script type="text/javascript">
+var mask;
+window.onload = function() {
+	
+	document.getElementById('ans1').innerHTML = EZ.DateFormat('2012/12/07 04:37:55','yyyy-mm-dd HH:MM:ss');
+	document.getElementById('ans2').innerHTML = EZ.DateFormat(new Date('2012/12/07 04:37:55'),'yyyy-mm-dd HH:MM:ss');
+	var timestamp = new Date('2012/12/07 04:37:55').getTime()- 3600*1000;
+	document.getElementById('ans3').innerHTML = EZ.DateFormat(new Date(timestamp),'yyyy-mm-dd HH:MM:ss');
+}
+
+
+</script>
+</head>
+<body>
+	<font style='font-size:12px;'>→</font>
+	範例1:<br />
+	EZ.DateFormat('2012/12/07 04:37:55','yyyy-mm-dd HH:MM:ss') : <span id="ans1"></span> <br />
+	<br /><br />範例2:<br />
+	EZ.DateFormat(new Date('2012/12/07 04:37:55'),'yyyy-mm-dd HH:MM:ss') : <span id="ans2"></span> <br />
+	<br /><br />範例3:<br />
+	減去一小時 <br />
+	var timestamp = new Date('2012/12/07 04:37:55').getTime() - 3600*1000; <br />
+	EZ.DateFormat(new Date(timestamp),'yyyy-mm-dd HH:MM:ss') : <span id="ans3"></span> <br />
+</body>
+</html>

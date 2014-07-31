@@ -1,0 +1,178 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html>
+<head>
+<title></title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<link rel="stylesheet" type="text/css" href="http://img.sog88.net/share/plugin/EZ/css/EZ.css" />
+<link rel="stylesheet" type="text/css" href="grid.css" />
+<script type="text/javascript" src="http://img.sog88.net/share/plugin/pub_library.js"></script>
+<script type="text/javascript" src="render.js"></script>
+<script type="text/javascript" src="data.js"></script>
+<style type="text/css">
+<!--
+
+-->
+</style>
+<script type="text/javascript">
+window.onload = function() {
+	EZ.createLog({height:1000,width:500});
+	ezGrid = new EZ.divGrid({
+					width : 760  //鎖定grid寬度,如果 columns 欄位總和寬度比他大 則無視,比他小 則把resizeable 的欄位拉寬 直到grid 寬度為此值
+					,cls : 'divGrid'
+					,event : {
+						//畫完以後會call這個function
+						onLoad : function(gridDom,ds,virtual,Drawer,opt){
+							var nodes = gridDom.childNodes;
+							var rowIndex = 1;
+							for(var i=0,ilen=nodes.length;i<ilen;i++)
+							{
+								var node = nodes[i];
+								if(node.getAttribute('usefor') == 'row')
+								{
+									node.className = node.className.toString().replace(' evenRow','');
+									node.className = node.className.toString().replace(' oddRow','');
+									if(rowIndex%2 == 0){
+										node.className = node.className.toString()+' evenRow';
+									}else{
+										node.className = node.className.toString()+' oddRow';
+									}
+									rowIndex++;
+								}
+							}
+						}
+					}
+					,group :{
+						field:'e'
+						,enable:true
+						,tpl:function(value, record , domIndex){
+							var name = record.data.leaguename;
+							if(typeof name == 'undefined') name = value;
+							name = "<div style='margin-left:10px;;display:inline-block;'> 聯盟: "+name+"  (<label usefor='count'>"+record.groupCount+"</label>) "+value+"</div>";
+							return name;
+						}
+					}
+					,update : {
+						unique : 'b'// 每一筆資料都此欄位 都是唯一值   比如 gid  用於更新
+						,updateRow : function(row,virtualRow,Drawer,opt,domIndex){
+							var isUpdate = false;
+							//var cells = dom.getElementsByTagName('div');
+							if(row.getAttribute('usefor')=='group' && virtualRow.groupCount != row.getAttribute('gc'))
+							{
+								var labels = row.getElementsByTagName('label');
+								for(var i=0;i<labels.length;i++)
+								{
+									var l = labels[i];
+									l.innerHTML = virtualRow.groupCount;
+								}
+							}
+							else if(row.getAttribute('usefor')=='row')
+							{
+								var cells = row.childNodes;
+								for(var i=0,ilen=cells.length;i<ilen;i++)
+								{
+									var cell = cells[i];
+									var c = opt.columns[i];
+									if(cell.getAttribute('usefor') == 'cell')
+									{
+										var cls = cell.className.toString();
+										cls = cls.replace(' cellUpdate','');
+										cell.className = cls;
+										var updateField = cell.getAttribute('uf');
+										var updateValue = cell.getAttribute('udv');
+										
+										var ufs = updateField.split(',');
+										var udvs = updateValue.split(',');
+										//EZ.log('ufs '+ufs);
+										//EZ.log('udvs '+udvs);
+										var _udvs = [];
+										for(var j=0;j<ufs.length;j++)
+										{
+											var uf = ufs[j];
+											_udvs[j] = virtualRow.data[uf];
+										}
+										for(var j=0;j<ufs.length;j++)
+										{
+											var uf = ufs[j];
+											var udv = udvs[j];
+											var _udv = _udvs[j];
+											if(uf=='') continue;
+											if(udv != _udv)
+											{
+												isUpdate = true;
+												var value = virtualRow.data[c.dataIndex];
+												cell.setAttribute('udv',_udvs.join(','));
+												cell.innerHTML = c.renderer.apply(this,[value,virtualRow,virtualRow,domIndex,i]);
+												//cell.style.backgroundColor='#ffa500';
+												//cell.style.backgroundColor='#f4a460';
+												cell.className = cls+' cellUpdate';
+												tmpUpdate[tmpUpdate.length] = cell;
+												/*
+												tmpUpdate[tmpUpdate.length] = {
+													cell : cell
+													,html : c.renderer.apply(this,[value,virtualRow,virtualRow,domIndex,i])
+												};
+												*/
+												break;
+											}
+										}
+									}
+								}
+								//if(isUpdate==true)
+								//{
+									//var cloned = Drawer.create(virtualRow,true);
+									//row.parentNode.replaceChild(cloned,row);
+								//}
+							}
+						}
+						,insertRow : function(dom,vdom,Drawer,opt){
+							var insertDom = Drawer.create(vdom,true);
+							//if(vdom.usefor=='row') tmpInsert[tmpInsert.length] = insertDom;
+							if(!dom)
+							{
+								opt.Grid.appendChild(insertDom);
+							}
+							else
+							{
+								opt.Grid.insertBefore(insertDom,dom);
+							}
+						}
+						,removeRow : function(dom,vdom,Drawer,opt){
+							dom.parentNode.removeChild(dom);
+						}
+					}
+				});
+	ezGrid.show(ds[0],{renderTo:'divGrid',columns:columns()});
+	index++; if(index>=ds.length) index=0;
+}
+var ezGrid;
+var updateGrid = function(){
+	//alert($('#divGrid'));
+	//$('#divGrid').on('click',function(){});
+	//return;
+	var startTime = new Date().getTime();
+	EZ.log('0 更新開始 '+ds.length);
+	clearColor();
+	ezGrid.update(ds[index]);
+	index++; if(index>=ds.length) index=0;
+	setColor();
+	var tt =(new Date().getTime()-startTime);
+	if(tt > 100)
+		EZ.log("(( <font style='color:red;'>"+tt+'</font> ) 更新結束 cells = '+tmpUpdate.length);
+	else
+		EZ.log("( <font style='color:fff;'>"+tt+'</font> ) 更新結束 cells = '+tmpUpdate.length);
+};
+var opt={
+	gtype:'FT'
+	,rtype:'R'
+}
+function draw(jsData){
+	
+}
+var index=0;
+</script>
+</head>
+<body>
+	<input type="button" value="update" onclick="updateGrid();">
+	<div id="divGrid" class="cRatioGrid"></div>
+</body>
+</html>

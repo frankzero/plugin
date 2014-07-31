@@ -1,0 +1,331 @@
+
+/*賠率表 -----------*/
+.cRatioGrid .divGrid{
+	font-size:12px;
+	background-color:#cceecc;
+	border-collapse:collapse;
+	word-break:break-all;
+	word-wrap:break-word;
+	border-spacing:0px;
+	border-left:1px solid #cecece;
+	border-top:1px solid #cecece;
+	float:left;
+}
+.cRatioGrid .divGrid .head{
+	float:left;
+	clear:both;
+	background-color:#cc2233;
+}
+.cRatioGrid .divGrid .head .cell{
+	display:inline-block;
+	float:left;
+	height:12px;
+	text-align:center;
+	border-right:1px solid #cecece;
+	border-bottom:1px solid #cecece;
+	padding-top:4px;
+	padding-bottom:4px;
+	color:#fff;
+	font-weight:normal;
+	cursor:pointer;
+}
+.cRatioGrid .divGrid .foot{
+	float:left;
+	clear:both;
+	background-color:#cceecc;
+}
+.cRatioGrid .divGrid .foot .cell{
+	display:inline-block;
+	float:left;
+	height:20px;
+	text-align:center;
+	border-right:1px solid #cecece;
+	border-bottom:1px solid #cecece;
+}
+.cRatioGrid .divGrid .group{
+	float:left;
+	clear:both;
+	background-color:orange;
+	border-right:1px solid #cecece;
+	border-bottom:1px solid #cecece;
+	cursor:pointer;
+}
+.cRatioGrid .divGrid .group label{
+	color:#1e90ff;
+}
+.cRatioGrid .divGrid .row{
+	overflow:hidden;
+	clear:both;
+	background-color:#fff;
+}
+.cRatioGrid .divGrid .insertRow{
+	background-color:#f4a460;
+}
+.cRatioGrid .divGrid .oddRow{
+	background-color:#fff;
+}
+.cRatioGrid .divGrid .evenRow{
+	background-color:#f0e68c;
+}
+.cRatioGrid .divGrid .cell{
+	overflow:hidden;
+	float:left;
+	width:60px;
+	height:49px;
+	text-align:left;
+	border-right:1px solid #cecece;
+	border-bottom:1px solid #cecece;
+}
+.cRatioGrid .divGrid .cellUpdate{
+	background-color:#f4a460;
+}
+.cRatioGrid .divGrid .cell a{
+	cursor:pointer;
+	color:red;
+	font-weight:bold;
+	text-decoration:none;
+}
+.cRatioGrid .divGrid .cell a:hover{
+	color:#00CC00;
+}
+.clear{
+	clear:both;
+}
+.cRatioGrid .showre{
+	background-image:url(../images/cRatioGrid/showre.gif);
+	display:inline-block;
+	width:31px;
+	height:17px;
+}
+/* 每一格 微調 cell*/
+.cRatioGrid .divGrid .time{
+	text-align:center;
+	font-weight:bold;
+}
+.cRatioGrid .divGrid .team{
+
+}
+.cRatioGrid .divGrid .R{
+	
+}
+.cRatioGrid .divGrid .R .css0{
+	float:left;
+	width:50%;
+	overflow:hidden;
+	color:blue;
+	font-weight:bold;
+}
+.cRatioGrid .divGrid .R .css1{
+	float:left;
+	width:50%;
+	overflow:hidden;
+}
+.cRatioGrid .divGrid .R .css2{
+	float:left;
+	width:50%;
+	overflow:hidden;
+	color:blue;
+	font-weight:bold;
+}
+.cRatioGrid .divGrid .R .css3{
+	float:left;
+	width:50%;
+	overflow:hidden;
+}
+.cRatioGrid .divGrid .HR_R{
+
+}
+.cRatioGrid .divGrid .HR_R .css0{
+	float:left;
+	width:50%;
+	overflow:hidden;
+	color:blue;
+	font-weight:bold;
+}
+.cRatioGrid .divGrid .HR_R .css1{
+	float:left;
+	width:50%;
+	overflow:hidden;
+}
+.cRatioGrid .divGrid .HR_R .css2{
+	float:left;
+	width:50%;
+	overflow:hidden;
+	color:blue;
+	font-weight:bold;
+}
+.cRatioGrid .divGrid .HR_R .css3{
+	float:left;
+	width:50%;
+	overflow:hidden;
+}
+.cRatioGrid .divGrid .OU{
+
+}
+.cRatioGrid .divGrid .OU .css0{
+	float:left;
+	width:50%;
+	overflow:hidden;
+	color:blue;
+	font-weight:bold;
+}
+.cRatioGrid .divGrid .OU .css1{
+	float:left;
+	width:50%;
+	overflow:hidden;
+}
+.cRatioGrid .divGrid .OU .css2{
+	float:left;
+	width:50%;
+	overflow:hidden;
+	color:blue;
+	font-weight:bold;
+}
+.cRatioGrid .divGrid .OU .css3{
+	float:left;
+	width:50%;
+	overflow:hidden;
+}
+.cRatioGrid .divGrid .HR_OU{
+
+}
+.cRatioGrid .divGrid .HR_OU .css0{
+	float:left;
+	width:50%;
+	overflow:hidden;
+	color:blue;
+	font-weight:bold;
+}
+.cRatioGrid .divGrid .HR_OU .css1{
+	float:left;
+	width:50%;
+	overflow:hidden;
+}
+.cRatioGrid .divGrid .HR_OU .css2{
+	float:left;
+	width:50%;
+	overflow:hidden;
+	color:blue;
+	font-weight:bold;
+}
+.cRatioGrid .divGrid .HR_OU .css3{
+	float:left;
+	width:50%;
+	overflow:hidden;
+}
+.cRatioGrid .divGrid .EO{
+
+}
+.cRatioGrid .divGrid .EO .css0{
+	float:left;
+	width:30%;
+	overflow:hidden;
+	color:blue;
+	font-weight:bold;
+}
+.cRatioGrid .divGrid .EO .css1{
+	float:left;
+	width:70%;
+	overflow:hidden;
+}
+.cRatioGrid .divGrid .EO .css2{
+	float:left;
+	width:30%;
+	overflow:hidden;
+	color:blue;
+	font-weight:bold;
+}
+.cRatioGrid .divGrid .EO .css3{
+	float:left;
+	width:70%;
+	overflow:hidden;
+}
+.cRatioGrid .divGrid .M{
+	
+}
+.cRatioGrid .divGrid .M .css0{
+	float:left;
+	width:30%;
+	overflow:hidden;
+	color:blue;
+	font-weight:bold;
+}
+.cRatioGrid .divGrid .M .css1{
+	float:left;
+	width:70%;
+	overflow:hidden;
+}
+.cRatioGrid .divGrid .M .css2{
+	float:left;
+	width:30%;
+	overflow:hidden;
+	color:blue;
+	font-weight:bold;
+}
+.cRatioGrid .divGrid .M .css3{
+	float:left;
+	width:70%;
+	overflow:hidden;
+}
+.cRatioGrid .divGrid .M .css4{
+	float:left;
+	width:30%;
+	overflow:hidden;
+}
+.cRatioGrid .divGrid .M .css5{
+	float:left;
+	width:70%;
+	overflow:hidden;
+}
+.cRatioGrid .divGrid .HR_M{
+
+}
+.cRatioGrid .divGrid .HR_M .css0{
+	float:left;
+	width:30%;
+	overflow:hidden;
+	color:blue;
+	font-weight:bold;
+}
+.cRatioGrid .divGrid .HR_M .css1{
+	float:left;
+	width:70%;
+	overflow:hidden;
+}
+.cRatioGrid .divGrid .HR_M .css2{
+	float:left;
+	width:30%;
+	overflow:hidden;
+	color:blue;
+	font-weight:bold;
+}
+.cRatioGrid .divGrid .HR_M .css3{
+	float:left;
+	width:70%;
+	overflow:hidden;
+}
+.cRatioGrid .divGrid .HR_M .css4{
+	float:left;
+	width:30%;
+	overflow:hidden;
+}
+.cRatioGrid .divGrid .HR_M .css5{
+	float:left;
+	width:70%;
+	overflow:hidden;
+}
+.cRatioGrid .divGrid .live{
+
+}
+.cRatioGrid .divGrid .R2{
+
+}
+.cRatioGrid .divGrid .FG{
+
+}
+.cRatioGrid .divGrid .score{
+
+}
+.cRatioGrid .divGrid .ps{
+
+}

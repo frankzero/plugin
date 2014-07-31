@@ -1,0 +1,43 @@
+ <!doctype html>
+<meta charset="utf-8">
+<head>
+<title>Using Showdown with and without jQuery: demo</title>
+<link rel="stylesheet" href="css/highlight.css">
+<style>
+  #container { height: 500px; }
+  textarea, #preview { float: left; width: 500px; height: 100%; overflow-y:auto}
+  #preview { border: 1px solid #666; margin-left: 20px; }
+  textarea{
+    height:600px;
+  }
+</style>
+</head>
+<body>
+    <input type="button" onclick="update();" value="update">
+    <textarea id="t1">
+
+    </textarea>
+    
+    <textarea id="t2">
+
+    </textarea>
+    
+    <div id="preview"></div>
+
+    <script src="js/markdown.js"></script>
+    <script src="js/highlight.js"></script>
+    
+    <script>
+    window.onload=function(){
+        
+
+    }
+    function update(){
+        var r = Markdown.to_html(document.getElementById('t1').value);
+        document.getElementById('t2').value=r;
+        document.getElementById('preview').innerHTML = r;
+    }
+   
+    </script>
+</body>
+</html>

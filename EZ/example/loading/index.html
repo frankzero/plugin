@@ -1,0 +1,42 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html>
+<head>
+<title>loadMask</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<link rel="stylesheet" type="text/css" href="../../css/EZ.css" />
+<script type="text/javascript" src="../../EZ.js"></script>
+<style type="text/css">
+<!--
+#content{
+	padding-bottom:5px;
+	padding-left:5px;
+	width:200px;
+	padding-right:5px;
+	padding-top:5px;
+	border:1px solid #000;
+}
+.block{
+	border-bottom:1px dotted #000 ;
+	margin-top:20px;
+}
+-->
+</style>
+<script type="text/javascript">
+var mask;
+window.onload = function() {
+	var t = [];
+    for(var i=0;i<125;i++){
+        t[t.length] = '<div>'+(i+1)+'</div><div style="margin-bottom:5px;border-bottom:1px solid #ccc"><img src="../../images/loading/loading ('+(i+1)+').gif"></div>';
+    }
+    document.getElementById('main').innerHTML = t.join('');
+}
+
+
+
+</script>
+</head>
+<body>
+	<div id="main"></div>
+	
+</body>
+</html>
