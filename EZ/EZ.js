@@ -338,7 +338,7 @@ var _onresize = new function () {
         }
         var elements = oForm.elements;
         var formData = {};
-        for (i = 0; i < elements.length; i++) {
+        for (var i = 0; i < elements.length; i++) {
             var field_type = elements[i].type;
             if (typeof field_type == 'undefined')
                 continue;

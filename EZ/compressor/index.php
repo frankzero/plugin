@@ -13,13 +13,15 @@ file_put_contents(ROOT.'EZ.2.min.js',minify_js($code));
 $fs = glob(ROOT.'src/*' );
 for($i=0,$imax=count($fs); $i<$imax; $i++){
     $f = $fs[$i];
+    if(strpos($f,'.kill') !== false) continue;
     $tmp = file_get_contents($f);;
     $code.="\n".$tmp;
-    file_put_contents( str_replace('/src/','/src.min/',$f), minify_js($tmp) );
+    //file_put_contents( str_replace('/src/','/src.min/',$f), minify_js($tmp) );
 }
-//echo $code;
-file_put_contents(ROOT.'EZ.2.all.js',$code);
+
+//file_put_contents(ROOT.'EZ.2.all.js',$code);
 file_put_contents(ROOT.'EZ.2.all.min.js',minify_js($code));
+
 /*
     壓縮 javascript
 */
