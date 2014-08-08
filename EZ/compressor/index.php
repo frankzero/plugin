@@ -1,5 +1,5 @@
 <?php 
-
+// su - frank; php /home/frank/www/plugin/EZ/compressor/index.php
 error_reporting(E_ALL);
 
 define('ROOT',realpath(__DIR__.'/../').'/');
@@ -19,7 +19,7 @@ for($i=0,$imax=count($fs); $i<$imax; $i++){
     //file_put_contents( str_replace('/src/','/src.min/',$f), minify_js($tmp) );
 }
 
-//file_put_contents(ROOT.'EZ.2.all.js',$code);
+file_put_contents(ROOT.'EZ.2.all.js',$code);
 file_put_contents(ROOT.'EZ.2.all.min.js',minify_js($code));
 
 /*

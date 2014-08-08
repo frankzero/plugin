@@ -2034,7 +2034,7 @@ Sizzle.selectors.filters['hidden'] = function(elem){
 };
 
 Sizzle.selectors.filters['visible'] = function(elem){
-    !Sizzle.selectors.filters.hidden( elem );
+    return !Sizzle.selectors.filters.hidden( elem );
 }
 
 //window.Sizzle = Sizzle;

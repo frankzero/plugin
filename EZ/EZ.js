@@ -1362,7 +1362,32 @@ var _onresize = new function () {
     EZ.is_array = function (obj) {
         return (typeof(obj) == 'object' && (obj instanceof Array));
     };
-
+    
+    /*
+        去頭尾空白 
+    */
+    EZ.trim = function(text){
+        //var rtrim = /^\s+|\s+$/g;
+        return text.replace(/^\s+|\s+$/g, '');
+    };
+    
+    EZ.is_json_string = function(str){
+        //JSON RegExp
+        var
+        rvalidchars = /^[\],:{}\s]*$/,
+        rvalidbraces = /(?:^|:|,)(?:\s*\[)+/g,
+        rvalidescape = /\\(?:["\\\/bfnrt]|u[\da-fA-F]{4})/g,
+        rvalidtokens = /"[^"\\\r\n]*"|true|false|null|-?(?:\d+\.|)\d+(?:[eE][+-]?\d+|)/g
+        ;
+        
+        if ( rvalidchars.test( str.replace( rvalidescape, "@" )
+        .replace( rvalidtokens, "]" )
+        .replace( rvalidbraces, "")) ){
+            return true;
+        }
+        return false;
+    };
+    
     //檔案上傳
     EZ.FileUpload = function () {
         var self = this,
@@ -2367,8 +2392,112 @@ if (typeof JSON !== 'object') {
 }());
 
 EZ.JSON={
-    encode : JSON.stringify
-    ,decode : JSON.parse
+    encode : window.JSON && window.JSON.stringify 
+    || function (o) {
+    
+        var type = typeof(o);
+
+        if (o === null)
+            return "null";
+
+        if (type == "undefined")
+            return undefined;
+
+        if (type == "number" || type == "boolean")
+            return o + "";
+
+        if (type == "string")
+            return this.quoteString(o);
+
+        if (type == 'object') {
+            if (typeof o.toJSON == "function")
+                return this.encode(o.toJSON());
+
+            if (o.constructor === Date) {
+                var month = o.getUTCMonth() + 1;
+                if (month < 10)
+                    month = '0' + month;
+
+                var day = o.getUTCDate();
+                if (day < 10)
+                    day = '0' + day;
+
+                var year = o.getUTCFullYear();
+
+                var hours = o.getUTCHours();
+                if (hours < 10)
+                    hours = '0' + hours;
+
+                var minutes = o.getUTCMinutes();
+                if (minutes < 10)
+                    minutes = '0' + minutes;
+
+                var seconds = o.getUTCSeconds();
+                if (seconds < 10)
+                    seconds = '0' + seconds;
+
+                var milli = o.getUTCMilliseconds();
+                if (milli < 100)
+                    milli = '0' + milli;
+                if (milli < 10)
+                    milli = '0' + milli;
+
+                return '"' + year + '-' + month + '-' + day + 'T' + hours + ':'
+                 + minutes + ':' + seconds + '.' + milli + 'Z"';
+            }
+
+            if (o.constructor === Array) {
+                var ret = [];
+                for (var i = 0; i < o.length; i++)
+                    ret.push(this.encode(o[i]) || "null");
+
+                return "[" + ret.join(",") + "]";
+            }
+
+            var pairs = [];
+            for (var k in o) {
+                var name;
+                var type = typeof k;
+
+                if (type == "number")
+                    name = '"' + k + '"';
+                else if (type == "string")
+                    name = this.quoteString(k);
+                else
+                    continue; // skip non-string or number keys
+
+                if (typeof o[k] == "function")
+                    continue; // skip pairs where the value is a function.
+
+                var val = this.encode(o[k]);
+
+                pairs.push(name + ":" + val);
+            }
+
+            return "{" + pairs.join(", ") + "}";
+        }
+    },
+    decode : window.JSON && window.JSON.parse
+    || function(data){
+        if ( data === null ) {
+			return data;
+		}
+        
+        if ( typeof data === "string" ) {
+
+			// Make sure leading/trailing whitespace is removed (IE can't handle it)
+			data = EZ.trim( data );
+
+			if ( data ) {
+				// Make sure the incoming data is actual JSON
+				// Logic borrowed from http://json.org/json2.js
+                if (EZ.is_json_string(data)){
+					return ( new Function( "return " + data ) )();
+				}
+			}
+		}
+        EZ.error( "Invalid JSON: " + data );
+    }
 }
 
 

@@ -13,29 +13,66 @@ if (typeof console == 'undefined') {
     core_rnotwhite = /\S+/g,
     rspaces = /\s+/,
     rclass = /[\n\t]/g,
-    class2type={},
+    class2type = {},
+    cssNumber = {
+		"columnCount": true,
+		"fillOpacity": true,
+		"fontWeight": true,
+		"lineHeight": true,
+		"opacity": true,
+		"order": true,
+		"orphans": true,
+		"widows": true,
+		"zIndex": true,
+		"zoom": true
+	},
+    /*
+        style name 
+    */
+    rmsPrefix = /^-ms-/,
+    rdashAlpha = /-([\da-z])/gi,
+    
+    // 改 styleu名稱用 
+    right_style_name_case = function( all, letter ) {
+        return letter.toUpperCase();
+    },
+    
     core_toString = class2type.toString
     ;
     
-    (function(s, class2type){
-        var row,name;
+    EZ.query = function(selector, context, results, seed){
         
-        s = s.split(" ");
+        return new EZ.selector(selector, context, results, seed, EZ);
         
-        while(name = s.shift()){
-            class2type[ "[object " + name + "]" ] = name.toLowerCase();
-        }
-    }("Boolean Number String Function Array Date RegExp Object Error", class2type));
+    };
     
-    EZ.stringicon = {
+    window.EZ = EZ;
+    /*
+        懶得打字 EZ.query  縮短成 ff;
+    */
+    window.ff = EZ.query;
+    
+    EZ.icon = {
         'close' : '✖'
+    };
+    
+    EZ.id = function(){
+        var count = 0,
+        token = EZ.unique_id(10)
+        ;
+        
+        EZ.id =  function(){
+            count++;
+            return token + count;
+        };
+        return EZ.id();
     };
     
     EZ.emptyFN = new Function();
     
-    EZ.json_encode = JSON.stringify;
-    
-    EZ.json_decode = JSON.parse;
+    EZ.error = function(msg){
+        throw new Error( msg );
+    };
     
     EZ.loadjs = function(src, async){
         var fjs = document.getElementsByTagName('script')[0]
@@ -83,7 +120,7 @@ if (typeof console == 'undefined') {
     EZ.trim = function(text){
         //var rtrim = /^\s+|\s+$/g;
         return text.replace(/^\s+|\s+$/g, '');
-    }
+    };
     
     EZ.stopwatch = function () {
         var 
@@ -177,7 +214,7 @@ if (typeof console == 'undefined') {
             
             arr = arguments[i];
             
-            if(this.typeof(arr) == 'array'){
+            if(this.type(arr) == 'array'){
                 
                 r = r.concat(arr);
                 
@@ -191,7 +228,7 @@ if (typeof console == 'undefined') {
                     r[r.length] = a;
                 }
                 
-            }else if(EZ.typeof(arr) != 'undefined'){
+            }else if(EZ.type(arr) != 'undefined'){
                 r[r.length] = arr;
             }
         }
@@ -199,25 +236,42 @@ if (typeof console == 'undefined') {
     };
     
     EZ.isEmpty = function (obj) {
-        return (typeof obj == 'undefined' || obj == null || obj == '') ? true : false;
+        return (typeof obj == 'undefined' || obj === null || obj === '') ? true : false;
     };
     
-    EZ.typeof = function(obj){
+    EZ.type = function(obj){
         
-        if(obj == null){
+        if(obj === null){
             return String(obj);
         }
         
         return typeof obj === "object" || typeof obj === "function" ?
         class2type[ core_toString.call(obj) ] || "object": typeof obj;
     };
-
+    
+    EZ.isJSON = EZ.is_json_string = function(str){
+        //JSON RegExp
+        var
+        rvalidchars = /^[\],:{}\s]*$/,
+        rvalidbraces = /(?:^|:|,)(?:\s*\[)+/g,
+        rvalidescape = /\\(?:["\\\/bfnrt]|u[\da-fA-F]{4})/g,
+        rvalidtokens = /"[^"\\\r\n]*"|true|false|null|-?(?:\d+\.|)\d+(?:[eE][+-]?\d+|)/g
+        ;
+        
+        if ( rvalidchars.test( str.replace( rvalidescape, "@" )
+        .replace( rvalidtokens, "]" )
+        .replace( rvalidbraces, "")) ){
+            return true;
+        }
+        return false;
+    };
+    
     EZ.isFunction = function(obj){
-        return EZ.typeof(obj) === "function";
+        return EZ.type(obj) === "function";
     };
 
     EZ.isArray = Array.isArray || function(obj){
-        return EZ.typeof(obj) === "array";
+        return EZ.type(obj) === "array";
     };
     
     /*
@@ -243,19 +297,24 @@ if (typeof console == 'undefined') {
     /*
         判斷是 html 元素
     */
-    EZ.isElem = function(el){
-        var tagName,nodeType;
+    EZ.isElem = EZ.isHtmlElement = function(el){
+        /*
+            2種方法都可 
+        return (Object.prototype.toString.call(el).toUpperCase().indexOf('HTML') != -1) ? true : false;
+        */
+        return (el && el.tagName && el.nodeType ) ? true : false;
         
-        tagName = el && el.tagName;
-        
-        nodeType = el && el.nodeType;
-        
-        if(tagName && nodeType){
-            return true;
-        }
-        
-        return false;
     };
+    
+    /*
+        判斷是 事件 物件   
+        [object KeyboardEvent]
+        [object mouseEvent]
+        [object pointerEvent] IE
+    */
+    EZ.isEventObject = function(e){
+        return (Object.prototype.toString.call(e).toUpperCase().indexOf('EVENT') != -1) ? true : false;
+    }
     
     EZ.isNumeric = function(obj){
         return !isNaN( parseFloat(obj) ) && isFinite( obj );
@@ -269,10 +328,10 @@ if (typeof console == 'undefined') {
         return true;
     };
 
-    EZ.object_to_querystring = function(a){
+    EZ.param = EZ.object_to_querystring = function(a){
         var s = [],
         add = function(key,value){
-            value = EZ.isFunction(value) ? value() : (value == null ? "" : value);
+            value = EZ.isFunction(value) ? value() : (value === null ? "" : value);
             s[ s.length ] = encodeURIComponent( key ) + "=" + encodeURIComponent( value );
             //s[ s.length ] = key + "=" + value;
         },
@@ -287,7 +346,7 @@ if (typeof console == 'undefined') {
                     v = obj[i];
                     buildParams( prefix + "[" + ( typeof v === "object" ? i : "" ) + "]", v, add );
                 }
-            }else if(EZ.typeof(obj) === "object"){
+            }else if(EZ.type(obj) === "object"){
                 for(name in obj){
                     if(obj.hasOwnProperty(name)){
                         buildParams( prefix + "[" + name + "]", obj[ name ], add );
@@ -314,22 +373,6 @@ if (typeof console == 'undefined') {
         return s.join( "&" ).replace( r20, "+" );
     };
 
-    EZ.param = EZ.object_to_querystring;
-    
-    EZ.GET = function () {
-        if (document.location.toString().indexOf('?') == -1) {
-            return {};
-        }
-        var _get = {};
-        var t = document.location.toString().split('?');
-        var t2 = t[1].split('&');
-        for (var i = 0; i < t2.length; i++) {
-            var t3 = t2[i].split('=');
-            _get[t3[0]] = t3[1];
-        }
-        return _get;
-    }();
-    
     EZ.round = function (num, digit) {
         var x = 1;
         if (digit) {
@@ -338,59 +381,65 @@ if (typeof console == 'undefined') {
         return Math.round(num * x) / x;
     };
     
-    EZ.random = function (min, max) {
+    EZ.rand = EZ.random = function (min, max) {
         return Math.round(Math.random() * (max - min) + min);
     };
     
-    EZ.rand = EZ.random;
-    
     EZ.unique_id = function (num) {
-        var t = [
+        var 
+        t = [
             'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M'
             , 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'
             , 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm'
             , 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z'
             , '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'
-        ];
-        var f = [];
-        for (var i = 0; i < num; i++) {
-            f[i] = t[(i != 0) ? Math.floor((Math.random() * 62)) : Math.floor((Math.random() * 52))];
+        ],
+        
+        f = []
+        
+        ;
+        
+        f[0] = t[ Math.floor( Math.random() * 52 ) ];
+        
+        for (var i = 1; i < num; i++) {
+            f[i] = t[ Math.floor( Math.random() * 62 ) ];
         }
+        
         return f.join('');
     };
     
-    EZ.id = (new function () {
-        var count=0;
-        var token = EZ.unique_id(10)+'_';
-        return function(){
-            count++;
-            return token + count;
-        }
-    }());
-    
     //複製object
     EZ.clone = function (obj) {
+        var copy,i,len,att;
         // Handle the 3 simple types, and null or undefined
-        if (null == obj || "object" != typeof obj)
+        if (null === obj || "object" != typeof obj)
             return obj;
+        
         // Handle Date
         if (obj instanceof Date) {
-            var copy = new Date();
+            copy = new Date();
             copy.setTime(obj.getTime());
             return copy;
         }
+        
         // Handle Array
         if (obj instanceof Array) {
-            var copy = [];
-            for (var i = 0, len = obj.length; i < len; ++i) {
+            copy = [];
+            for (i = 0, len = obj.length; i < len; ++i) {
                 copy[i] = this.clone(obj[i]);
             }
             return copy;
         }
+        
+        // html elements
+        if(obj.cloneNode){
+            return obj.cloneNode(true);
+        }
+        
         // Handle Object
         if (obj instanceof Object) {
-            var copy = {};
-            for (var attr in obj) {
+            copy = {};
+            for (attr in obj) {
                 if (obj.hasOwnProperty(attr))
                     copy[attr] = this.clone(obj[attr]);
             }
@@ -431,7 +480,7 @@ if (typeof console == 'undefined') {
         回傳bool 
     */
     EZ.in_array = function (find, myArray) {
-        if (myArray.length == 0)
+        if (myArray.length === 0)
             return false;
         for (var i = 0; i < myArray.length; i++) {
             if (myArray[i] == find)
@@ -559,7 +608,6 @@ if (typeof console == 'undefined') {
         j,
         jmax,
         elements,
-        formData,
         field_type,
         name,
         v
@@ -663,7 +711,7 @@ if (typeof console == 'undefined') {
                     if (typeof rtn != 'boolean') {
                         rtn = true;
                     } //fucntion 沒回傳true fasle 就算他驗證通過,管他的
-                    if (rtn == false) {
+                    if (rtn === false) {
                         result.push(elements[i]);
                     }
                 }
@@ -676,20 +724,18 @@ if (typeof console == 'undefined') {
         return result;
     };
     
-    EZ.readCookie = function(name){
-        var name = name + "=";
+    EZ.getCookie = EZ.readCookie = function(name){
+        name = name + "=";
         var ca = document.cookie.split(';');
         for(var i=0; i<ca.length; i++) 
         {
             var c = ca[i].trim();
-            if (c.indexOf(name)==0) return c.substring(name.length,c.length);
+            if (c.indexOf(name) === 0) return c.substring(name.length,c.length);
         }
         return "";
     };
 
-    EZ.getCookie = EZ.readCookie;
-    
-    EZ.setCookie = function(name,value,time,unit,path){
+    EZ._setCookie = function(name,value,time,unit,path){
         unit = unit || '';
         path = path || '/';
         switch(unit){
@@ -711,11 +757,17 @@ if (typeof console == 'undefined') {
         var d = new Date();
         d.setTime(d.getTime()+(time));
         var expires = "expires="+d.toGMTString();
-        document.cookie = name + "=" + value + ";path="+path+';' + expires;
+        document.cookie = name + "=" + value + ";Path="+path+';' + expires;
     };
     
-    EZ.deleteCookie=function(name){
-        document.cookie = name + '=; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+    EZ.setCookie = function(name, value, day){
+        var expires = "expires="+EZ.Date().day(day).dateObject.toGMTString();
+        document.cookie = name + "=" + value + ";Path=/;" + expires;
+    };
+    
+    EZ.removeCookie = EZ.deleteCookie = function(name){
+        EZ.setCookie(name,'',-1);
+        //document.cookie = name + '=; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
     };
     
     //滑鼠座標
@@ -793,7 +845,9 @@ if (typeof console == 'undefined') {
                 second : function(i){
                     obj.setTime(obj.getTime()+i*1000);
                     return Self;
-                }
+                },
+                obj : obj,
+                dateObject : obj
                 
             }
             return Self;
@@ -922,13 +976,13 @@ if (typeof console == 'undefined') {
         }
     }());
     
-    EZ.parse = function(response){
+    EZ.api_decode = function(response){
         var r;
         
         try{
             r = EZ.json_decode(response);
         }catch(e){
-            return {success:0,msg:'server response error',data:[]};
+            return {success:0,msg:'server response error',data:response};
         }
         
         return r;
@@ -937,9 +991,9 @@ if (typeof console == 'undefined') {
     /*
         把文字 轉成 element
     */
-    EZ.text_to_html = function(text){
+    EZ.html_decode = function(text){
         
-        if(this.typeof(text) != 'string') return [];
+        if(this.type(text) != 'string') return [];
         
         var div,rs=[],child,i;
         
@@ -951,6 +1005,29 @@ if (typeof console == 'undefined') {
             rs[rs.length] = child;
         }
         return rs;
+    };
+    
+    EZ.xml_decode = function( data ){
+        var xml, tmp;
+		if ( !data || typeof data !== "string" ) {
+			return null;
+		}
+		try {
+			if ( window.DOMParser ) { // Standard
+				tmp = new DOMParser();
+				xml = tmp.parseFromString( data , "text/xml" );
+			} else { // IE
+				xml = new ActiveXObject( "Microsoft.XMLDOM" );
+				xml.async = "false";
+				xml.loadXML( data );
+			}
+		} catch( e ) {
+			xml = undefined;
+		}
+		if ( !xml || !xml.documentElement || xml.getElementsByTagName( "parsererror" ).length ) {
+			EZ.error( "Invalid XML: " + data );
+		}
+		return xml;
     };
     
     EZ.request = function(url, method, params, callback){
@@ -1014,6 +1091,16 @@ if (typeof console == 'undefined') {
         EZ.request(url, 'POST' , params , callback);
     };
     
+    /*
+        類似 background-color => backgroundColor 的行為 
+    */
+    EZ.right_style_name = function(string){
+            return string.replace( rmsPrefix, "ms-" ).replace( rdashAlpha, right_style_name_case );
+    };
+
+    /*
+        事件處理器
+    */
     EZ.event = {
         
         fn : {},
@@ -1026,7 +1113,7 @@ if (typeof console == 'undefined') {
             清除所有子元素事件 
         */
         cleanall : function(el){
-            //var s = EZ.Date().getTime();
+            
             var els,tmp,i=0;
             
             els = EZ.find('*',el);
@@ -1034,8 +1121,7 @@ if (typeof console == 'undefined') {
             while(tmp = els[i++]){
                 this.clean(tmp);
             }
-            //var e = EZ.Date().getTime();
-            //console.log(e-s);
+            
         },
         
         /*
@@ -1064,39 +1150,40 @@ if (typeof console == 'undefined') {
             }
         },
         
-        add : (function(){
+        add : function(el, type, handle){
             if(document.addEventListener){
-                return function(el, type, handle){
+                EZ.event.add = function(el, type, handle){
                     el.addEventListener(type, handle);
                 }
             }else if(document.attachEvent){
-                return function(el, type, handle){
+                EZ.event.add = function(el, type, handle){
                     el.attachEvent( "on" + type, handle );
                 }
             }else{
-                return function(el, type, handle){
+                EZ.event.add = function(el, type, handle){
                     el['on'+type] = handle;
                 }
             }
-        }()),
+            EZ.event.add(el, type, handle);
+        },
         
-        remove : (function(){
+        remove : function(el, type, handle){
             if(document.removeEventListener){
-                return function(el, type, handle){
+                EZ.event.remove = function(el, type, handle){
                     el.removeEventListener(type, handle );
                 }                       
             }else if(document.detachEvent){
-                return function(el, type, handle){
+                EZ.event.remove = function(el, type, handle){
                     el.detachEvent( "on" + type, handle );
                 }
             }else{
-                return function(el, type, handle){
+                EZ.event.remove = function(el, type, handle){
                     el['on'+type] = null;
                 }
             }
-        }())
+            EZ.event.remove(el, type, handle);
+        }
     };
-    
     
     /*
         元素處理器 
@@ -1104,10 +1191,11 @@ if (typeof console == 'undefined') {
     EZ.elements = {
 
         addClass : function (elem,cl){
+            var c;
             var classNames = (cl || "").split( rspaces );
             var className = " " + elem.className + " ",
             setClass = elem.className;
-            for ( var c = 0, cl = classNames.length; c < cl; c++ ) {
+            for ( c = 0, cl = classNames.length; c < cl; c++ ) {
                 if ( className.indexOf( " " + classNames[c] + " " ) < 0 ) {
                     setClass += " " + classNames[c];
                 }
@@ -1117,9 +1205,10 @@ if (typeof console == 'undefined') {
         },
         
         removeClass : function (elem,cl){
+            var c;
             var classNames = (cl || "").split( rspaces );
             var className = (" " + elem.className + " ").replace(rclass, " ");
-            for ( var c = 0, cl = classNames.length; c < cl; c++ ) {
+            for ( c = 0, cl = classNames.length; c < cl; c++ ) {
                 className = className.replace(" " + classNames[c] + " ", " ");
             }
             
@@ -1154,9 +1243,29 @@ if (typeof console == 'undefined') {
             }
         },
         
-        css : function(el, style, value){
-            if(EZ.typeof(el) != 'undefined' && EZ.typeof(el.style) == 'object')
-            el.style[style] = value;
+        css : function(el, styleName, value){
+            
+            var originName = styleName;
+            
+            if( !EZ.isHtmlElement(el) ) return ;
+            
+            // Don't set styles on text and comment nodes
+            if ( !el || el.nodeType === 3 || el.nodeType === 8 || !el.style ) return;
+            
+            styleName = EZ.right_style_name(styleName);
+            
+            // If a number was passed in, add 'px' to the (except for certain CSS properties)
+			if ( EZ.isNumeric(value) && !cssNumber[ styleName ] ) {
+				value += "px";
+			}
+            
+            //console.log(originName+' = '+styleName+' = '+value);
+                
+            try{
+            el.style[styleName] = value;
+            }catch(e){
+                console.log(styleName+' '+value);
+            }
         },
         
         removeCss : function(el, style){
@@ -1164,7 +1273,7 @@ if (typeof console == 'undefined') {
         },
         
         attr : function(el, key, value){
-            if(EZ.typeof(value) == 'undefined'){
+            if(EZ.type(value) == 'undefined'){
                 return (el && el.getAttribute) ? el.getAttribute(key) : '';
             }else{
                 el.setAttribute(key, value);
@@ -1189,7 +1298,7 @@ if (typeof console == 'undefined') {
             found
             ;
             
-            if( EZ.typeof(el && el.ezid) == 'undefined' ){
+            if( EZ.type(el && el.ezid) == 'undefined' ){
                 
                 id = EZ.id();
                 el.ezid = [id];
@@ -1238,7 +1347,7 @@ if (typeof console == 'undefined') {
             fn
             ;
             
-            if( EZ.typeof(handle) == 'undefined'){
+            if( EZ.type(handle) == 'undefined'){
                 // 移除所有 type 事件
                 //handle = handle || (EZ.event.fn[el.ezid] && EZ.event.fn[el.ezid][type]);
                 
@@ -1255,7 +1364,7 @@ if (typeof console == 'undefined') {
                             
                             _handle = fn[_type];
                             EZ.event.removefn(id);
-                            EZ.event.remove(el, _type, handle);
+                            EZ.event.remove(el, _type, _handle);
                             
                             // 從 id群中 移除 id
                             el.ezid.splice(EZ.arrayIndexOf(id, el.ezid), 1);
@@ -1314,10 +1423,14 @@ if (typeof console == 'undefined') {
         
         html : function(el, content){
             
+            if(EZ.type(content) == 'undefined'){
+                return el.innerHTML;
+            }
+            
             EZ.empty(el);
             
             if( EZ.isElem(content) ) el.appendChild(content);
-            else if(EZ.typeof(content) == 'string') el.innerHTML = content;
+            else if(EZ.type(content) == 'string') el.innerHTML = content;
         },
         
         /*
@@ -1371,7 +1484,7 @@ if (typeof console == 'undefined') {
                 case "select_select-one":
                 case "select_select-multi":
                     
-                    if(EZ.typeof(v) != 'undefined'){
+                    if(EZ.type(v) != 'undefined'){
                         el.value = v;
                     }
                     
@@ -1381,7 +1494,7 @@ if (typeof console == 'undefined') {
                 
                 case 'input_checkbox':
                     
-                    if(EZ.typeof(v) != 'undefined'){
+                    if(EZ.type(v) != 'undefined'){
                         el.value = v;
                     }
                     
@@ -1395,17 +1508,17 @@ if (typeof console == 'undefined') {
                         break;
                 
                 case "form_":
-                    if(EZ.typeof(v) != 'undefined'){
+                    if(EZ.type(v) != 'undefined'){
                         EZ.setForm(el, v);
                     }
                     value = EZ.getForm(el);
                     break;
                     
                 default:
-                    if(EZ.typeof(v) != 'undefined'){
+                    if(EZ.type(v) != 'undefined'){
                         el.value = v;
                     }
-                    value = el.value;
+                    value = el.value || el.innerHTML || '';
                     break;
             }
             
@@ -1422,7 +1535,7 @@ if (typeof console == 'undefined') {
             
             w = el.clientWidth;
             
-            if(w == 0){
+            if(w === 0){
                 clone = el.cloneNode(true);
                 clone.style.display='inline-block';
                 clone.style.position = 'absolute';
@@ -1445,7 +1558,7 @@ if (typeof console == 'undefined') {
             
             h = el.clientHeight;
             
-            if(h == 0){
+            if(h === 0){
                 clone = el.cloneNode(true);
                 clone.style.display='inline-block';
                 clone.style.position = 'absolute';
@@ -1465,10 +1578,10 @@ if (typeof console == 'undefined') {
             ,i
             ;
             
-            if(EZ.typeof(child) == 'string'){
+            if(EZ.type(child) == 'string'){
                 
                 tmp = document.createDocumentFragment();
-                els = EZ.text_to_html(child);
+                els = EZ.html_decode(child);
                 i=0;
                 while(_child = els[i++]){
                     tmp.appendChild(_child);
@@ -1476,25 +1589,20 @@ if (typeof console == 'undefined') {
                 
                 el.appendChild(tmp);
                 
-            }else{
+            }else if( EZ.isHtmlElement(el) && EZ.isHtmlElement(child) ){
                 el.appendChild(child);
             }
             
-        }
-    };
-    
-    
-    (function(EZ){
-        var key;
-        for(key in EZ.elements){
-            if(EZ.elements.hasOwnProperty(key)){
-                EZ[key] = EZ.elements[key];
-                //EZ.constructor.prototype[key] = EZ.elements[key];
+        },
+        
+        remove : function(el, child){
+            if(child){
+                el.removeChild(child);
+            }else if(el.parentNode){
+                el.parentNode.removeChild(el);
             }
         }
-    }(EZ));
-    
-    
+    };
     
     EZ.grep = function( elems, callback, inv ) {
         var retVal,
@@ -1524,7 +1632,29 @@ if (typeof console == 'undefined') {
         
         var self = this;
         
+        this.el = {};
+        
         this.els = [];
+        
+        this.init = function(selector, context, results, seed){
+            
+            if(EZ.isEventObject(selector)){
+                
+                /*
+                    直接從 Event Object 把 Element 找出來 
+                */
+                selector = selector || window.event;
+                this.el = selector.target || selector.srcElement;
+                this.els = [this.el];
+            }else if(EZ.type(selector) == 'object'){
+                this.els = EZ.canbeArray(selector) ? selector: [selector];
+                this.el = this.els[0] || {};
+            }else{
+                this.els = EZ.find(selector, context, results, seed);
+                this.el = this.els[0] || {};
+            }
+            return this;
+        };
         
         this.each = function(fn){
             
@@ -1558,7 +1688,7 @@ if (typeof console == 'undefined') {
         
         this.attr = function(key, value){
             
-            if(EZ.typeof(value) == 'undefined'){
+            if(EZ.type(value) == 'undefined'){
                 return EZ.attr(this.els[0], key);
             }else{
                 this.each(function(index, el){
@@ -1595,7 +1725,8 @@ if (typeof console == 'undefined') {
             return this;
         };
         
-        this.addEvent = function(type, handle){
+        this.addEvent = this.on = function(type, handle){
+            
             this.each(function(index, el){
                 EZ.addEvent(el, type, handle);
             });
@@ -1603,17 +1734,24 @@ if (typeof console == 'undefined') {
             return this;
         };
         
-        this.on = this.addEvent;
-        
-        this.removeEvent = function(type, handle){
-            this.each(function(index, el){
-                EZ.removeEvent(el, type, handle);
-            });
+        this.removeEvent = this.off = function(type, handle){
+            
+            if(EZ.type(type) !== 'undefined'){
+                
+                this.each(function(index, el){
+                    EZ.removeEvent(el, type, handle);
+                });
+                
+            }else{
+                
+                this.each(function(index, el){
+                    EZ.event.clean(el);
+                });
+                
+            }
             
             return this;
         };
-        
-        this.off = this.removeEvent;
         
         this.hasClass = function(cls){
             if(typeof this.els[0] == 'undefined') return false;
@@ -1632,24 +1770,19 @@ if (typeof console == 'undefined') {
             return this.els[index];
         };
         
-        this.init = function(selector, context, results, seed){
-            if(EZ.typeof(selector) == 'object'){
-                this.els = EZ.canbeArray(selector) ? selector: [selector];
-            }else{
-                this.els = EZ.find(selector, context, results, seed);
-            }
-            return this;
-        };
-        
         this.find = function(selector, results, seed){
             return EZ.query(selector, this.els[0] ,results, seed);
         };
         
         this.html = function(content){
             
-            this.each(function(index, el){
-                EZ.html(el,content);
-            });
+            if(EZ.type(content) !== 'undefined'){
+                this.each(function(index, el){
+                    EZ.html(el,content);
+                });
+            }else{
+                return EZ.html(this.els[0]);
+            }
             
             return this;
         };
@@ -1674,7 +1807,7 @@ if (typeof console == 'undefined') {
         
         this.val = function(value){
             
-            if(EZ.typeof(value) == 'undefined'){
+            if(EZ.type(value) == 'undefined'){
                 return EZ.val(this.els[0]);
             }else{
                 this.each(function(index, el){
@@ -1705,19 +1838,330 @@ if (typeof console == 'undefined') {
             return this;
         };
         
+        this.remove = function(child){
+            
+            this.each(function(index, el){
+                EZ.remove(el, child);
+            });
+            
+            return this;
+        };
+        
         this.init(selector, context, results, seed);
         
     };
     
-    EZ.query = function(selector, context, results, seed){
-        
-        return new EZ.selector(selector, context, results, seed, EZ);
-        
-    };
-    
-    
     /*
-        init
+        簡便視窗 
+    */
+    EZ.window = function(options){
+        var self = this;
+        
+        options = options || {};
+        options.window_style = options.window_style || {};
+        options.mask_style = options.mask_style || {};
+        options.content_style = options.content_style || {};
+        options.close_button_style = options.close_button_style || {};
+        options.onopen = options.onopen || EZ.emptyFN;
+        options.onclose = options.onclose || EZ.emptyFN;
+        
+        
+        this.open = function(e){
+            options.onopen(e);
+            self.mask.show(e);
+            self.window.show(e);
+        };
+        
+        this.close = function(e){
+            options.onclose(e);
+            self.mask.hide();
+            self.window.hide();
+        };
+        
+        this.init = function(){
+            var key,v;
+            
+            for(key in options.window_style){
+                if(options.window_style.hasOwnProperty(key)){
+                    ff(this.window.el).css(key, options.window_style[key]);
+                }
+            }
+            
+            for(key in options.mask_style){
+                if(options.mask_style.hasOwnProperty(key)){
+                    ff(this.mask.el).css(key, options.mask_style[key]);
+                }
+            }
+            
+            for(key in options.content_style){
+                if(options.content_style.hasOwnProperty(key)){
+                    ff(this.window_content.el).css(key, options.content_style[key]);
+                }
+            }
+            
+            for(key in options.close_button_style){
+                if(options.close_button_style.hasOwnProperty(key)){
+                    ff(this.close_button.el).css(key, options.close_button_style[key]);
+                }
+            }
+        };
+        
+        this.mouseCoords = function (e) {
+            e = e || window.event;
+            if (e.pageX || e.pageY) {
+                return {
+                    x : e.pageX,
+                    y : e.pageY
+                };
+            }
+            return {
+                x : e.clientX + document.body.scrollLeft - document.body.clientLeft,
+                y : e.clientY + document.body.scrollTop - document.body.clientTop
+            };
+        };
+        
+        this.window = {
+            
+            el : document.createElement('div'),
+            
+            show : function(e){
+                
+                e = e || window.event;
+                
+                if(typeof e == 'string' || typeof e == 'number'){
+                    options.content = e;
+                    self.window_content.el.innerHTML = options.content;
+                }
+                
+                //ff(document.body).append(self.window.el);
+                ff(self.window.el).css('display', '');
+                
+                setTimeout(function(){
+                    ff(self.window.el).css('top','50%');
+                    ff(self.window.el).css('opacity','1');
+                },100);
+                
+            },
+            
+            hide : function(e){
+                
+                ff(self.window.el).css('top','40%');
+                
+                ff(self.window.el).css('opacity','0');
+                
+                setTimeout(function(){
+                    ff(self.window.el).css('display', 'none');
+                    /*
+                    if(self.window.el.parentNode == document.body){
+                        ff(document.body).remove(self.window.el);
+                    }
+                    */
+                },500);
+                
+            },
+            
+            init : function(){
+                var el
+                ;
+                
+                el = this.el;
+                
+                ff(el).css('background-color','#fff');
+                ff(el).css('border' , '3px solid #fff' );
+                ff(el).css('display' , 'none' );
+                ff(el).css('left' , '50%' );
+                ff(el).css('padding' , '15px' );
+                ff(el).css('position' , 'fixed' );
+                ff(el).css('text-align' , 'justify' );
+                ff(el).css('z-index' , '10' );
+                ff(el).css('transform' , 'translate(-50%, -50%)' );
+                ff(el).css('border-radius' , '10px' );
+                ff(el).css('box-shadow' , '0 1px 1px 2px rgba(0, 0, 0, 0.4) inset' );
+                ff(el).css('transition' , 'opacity .5s, top .5s' );
+                ff(el).css('-webkit-transition' , 'opacity .5s, top .5s' );
+                ff(el).css('min-width' , '200px' );
+                ff(el).css('min-height' , '200px' );
+                ff(el).css('box-shadow' , 'rgba(0, 0, 0, 0.8) 0px 4px 16px' );
+                ff(el).css('z-index', 1000 );
+                ff(el).css('opacity' , '0' );
+                ff(el).css('top' , '40%' );
+                
+                ff(document.body).append(el);
+            }
+        };
+        
+        this.window.init();
+      
+        this.window_content = {
+            el : document.createElement('div'),
+            
+            init : function(){
+                ff(this.el).append(options.content);
+            }
+        };
+        
+        this.window_content.init();
+        
+        this.mask = {
+            el : document.createElement('div'),
+            show : function(){
+                
+                ff(document.body).append(self.mask.el);
+                
+                setTimeout(function(){
+                    ff(self.mask.el).css('opacity', 1);
+                },0);
+                
+            },
+            
+            hide : function(){
+                
+                ff(self.mask.el).css('opacity', 0);
+                
+                ff(document.body).remove(self.mask.el);
+                
+            },
+            
+            init : function(){
+                var el = this.el;
+                
+                ff(el).css('position','fixed');
+                ff(el).css('left', '0');
+                ff(el).css('right', '0');
+                ff(el).css('top', '0');
+                ff(el).css('bottom', '0');
+                ff(el).css('textAlign', 'center');
+                ff(el).css('backgroundColor', 'rgba(0, 0, 0, 0.6)');
+                ff(el).css('zIndex', 999);
+                ff(el).css('opacity', 0);
+                ff(el).css('transition','opacity 1s');
+                ff(el).attr('close_window','1');
+                
+                ff(el).on('click' ,self.close);
+            }
+        };
+        this.mask.init();
+        
+        this.make_close_button = function(style){
+            
+            var close_button
+            ;
+            
+            close_button = {
+                el : document.createElement('a')
+            };
+            
+            var el = close_button.el;
+            
+            switch(style){
+                case '1':
+                    ff(el).css('display' , '');
+                    ff(el).css('color' , 'rgba(255, 255, 255, 0.9)');
+                    ff(el).css('backgroundColor' , 'rgba(0, 0, 0, 0.8)');
+                    ff(el).css('cursor' , 'pointer');
+                    ff(el).css('font-size' , '24px');
+                    ff(el).css('text-shadow' , '0 -1px rgba(0, 0, 0, 0.9)');
+                    ff(el).css('height' , '30px');
+                    ff(el).css('line-height' , '30px');
+                    ff(el).css('position' , 'absolute');
+                    ff(el).css('right' , '-15px');
+                    ff(el).css('text-align' , 'center');
+                    ff(el).css('text-decoration' , 'none');
+                    ff(el).css('top' , '-15px'); 
+                    ff(el).css('width' , '30px');
+                    ff(el).css('border-radius' , '15px');
+                  
+                    ff(el).on('mouseover',function(){
+                        ff(this).css('background-color', 'rgba(64, 128, 128, 0.8)');
+                    });
+                    
+                    ff(el).on('mouseout',function(){
+                        ff(this).css('background-color' , 'rgba(0, 0, 0, 0.8)' );
+                    });
+                    
+                    ff(el).html(EZ.icon.close);
+                    
+                    break;
+                    
+                default:
+                    ff(el).css('display' , '');
+                    ff(el).css('color' , 'gray');
+                    ff(el).css('cursor' , 'pointer');
+                    ff(el).css('font-size' , '.8rem');
+                    ff(el).css('text-shadow' , '0 -1px rgba(0, 0, 0, 0.9)');
+                    ff(el).css('position' , 'absolute');
+                    ff(el).css('text-align' , 'center');
+                    ff(el).css('text-decoration' , 'none');
+                    
+                    ff(el).css('right' , '0');
+                    ff(el).css('top' , '0'); 
+                    
+                    ff(el).css('width' , '20px');
+                    ff(el).css('height' , '20px');
+                    ff(el).css('line-height' , '20px');
+                    ff(el).css('border-radius' , '10px');
+                    
+                    ff(el).on('mouseover',function(){
+                    
+                        ff(this).css('background-color', '#DA4937');
+                        ff(this).css('color', '#fff');
+                        
+                    });
+                    
+                    ff(el).on('mouseout',function(){
+                        ff(this).removeCss('background-color');
+                        ff(this).css('color','gray');
+                    });
+                    
+                    ff(el).html(EZ.icon.close);
+                    break;
+            }
+            
+            ff(el).attr('close_window','1');
+            ff(el).on('click',self.close);
+            return close_button;
+        };
+        
+        this.close_button = this.make_close_button();
+        
+        ff(this.window.el).append(this.close_button.el);
+        ff(this.window.el).append(this.window_content.el);
+       
+       this.init();
+    };
+
+    /*
+        要先跑 init 在使用
+        EZ._GET.init();  
+        EZ._GET['a'];
+    */
+    EZ._GET = {
+        init : function(){
+            var s,_get,i,imax,d
+            ;
+            _get={};
+            
+            s= document.location.toString();
+            
+            
+            if (s.indexOf('?') == -1) {
+                return _get;
+            }
+            
+            s = s.split('?');
+            s = s[1].split('&');
+            for(i=0,imax=s.length; i<imax; i++){
+                d = s[i].split('=');
+                _get[d[0]] = d[1];
+            }
+            
+            EZ._GET = _get;
+        }
+    };
+    /*
+        以上都是 function  執行程式放此之下
+        init 
+**********************************************************************************************
     */
     
     EZ.scriptUrl = (function() {
@@ -1733,7 +2177,7 @@ if (typeof console == 'undefined') {
     /*
         <script src="/plugin/EZ/EZ.2.js?load=window,system,sha512"></script>
     */
-    (function(){
+    (function(EZ){
         var scripts = document.getElementsByTagName('script');
         var index = scripts.length - 1;
         var myScript = scripts[index];
@@ -1745,7 +2189,7 @@ if (typeof console == 'undefined') {
             for(var i=0,imax=s.length; i<imax; i++){
                 var t = s[i];
                 t = t.split('=');
-                if(t[0] == 'load'){
+                if(t[0] == 'load' && typeof(t[1]) == 'string'){
                     var tt = t[1].split(',');
                     for(var j=0,jmax=tt.length; j<jmax; j++){
                         EZ.load(tt[j]);
@@ -1753,32 +2197,150 @@ if (typeof console == 'undefined') {
                 }
             }
         }
-    }());
+    }(EZ));
+    
+     
+    (function(EZ){
+        var key;
+        for(key in EZ.elements){
+            if(EZ.elements.hasOwnProperty(key)){
+                EZ[key] = EZ.elements[key];
+            }
+        }
+    }(EZ));
+    
+    (function(s, class2type){
+        var row,name;
+        
+        s = s.split(" ");
+        
+        while(name = s.shift()){
+            class2type[ "[object " + name + "]" ] = name.toLowerCase();
+        }
+    }("Boolean Number String Function Array Date RegExp Object Error", class2type));
     
     
-    window.EZ = EZ;
+    
+    EZ.json_encode = window.JSON && window.JSON.stringify 
+    || function (o) {
+    
+        var type = typeof(o);
+
+        if (o === null)
+            return "null";
+
+        if (type == "undefined")
+            return undefined;
+
+        if (type == "number" || type == "boolean")
+            return o + "";
+
+        if (type == "string")
+            return this.quoteString(o);
+
+        if (type == 'object') {
+            if (typeof o.toJSON == "function")
+                return this.encode(o.toJSON());
+
+            if (o.constructor === Date) {
+                var month = o.getUTCMonth() + 1;
+                if (month < 10)
+                    month = '0' + month;
+
+                var day = o.getUTCDate();
+                if (day < 10)
+                    day = '0' + day;
+
+                var year = o.getUTCFullYear();
+
+                var hours = o.getUTCHours();
+                if (hours < 10)
+                    hours = '0' + hours;
+
+                var minutes = o.getUTCMinutes();
+                if (minutes < 10)
+                    minutes = '0' + minutes;
+
+                var seconds = o.getUTCSeconds();
+                if (seconds < 10)
+                    seconds = '0' + seconds;
+
+                var milli = o.getUTCMilliseconds();
+                if (milli < 100)
+                    milli = '0' + milli;
+                if (milli < 10)
+                    milli = '0' + milli;
+
+                return '"' + year + '-' + month + '-' + day + 'T' + hours + ':'
+                 + minutes + ':' + seconds + '.' + milli + 'Z"';
+            }
+
+            if (o.constructor === Array) {
+                var ret = [];
+                for (var i = 0; i < o.length; i++)
+                    ret.push(this.encode(o[i]) || "null");
+
+                return "[" + ret.join(",") + "]";
+            }
+
+            var pairs = [];
+            for (var k in o) {
+                var name;
+                var _type = typeof k;
+
+                if (_type == "number")
+                    name = '"' + k + '"';
+                else if (_type == "string")
+                    name = this.quoteString(k);
+                else
+                    continue; // skip non-string or number keys
+
+                if (typeof o[k] == "function")
+                    continue; // skip pairs where the value is a function.
+
+                var val = this.encode(o[k]);
+
+                pairs.push(name + ":" + val);
+            }
+
+            return "{" + pairs.join(", ") + "}";
+        }
+    };
+    
+    EZ.json_decode = window.JSON && window.JSON.parse
+    || function(data){
+        if ( data === null ) {
+			return data;
+		}
+        
+        if ( typeof data === "string" ) {
+
+			// Make sure leading/trailing whitespace is removed (IE can't handle it)
+			data = EZ.trim( data );
+
+			if ( data ) {
+				// Make sure the incoming data is actual JSON
+				// Logic borrowed from http://json.org/json2.js
+                if (EZ.is_json_string(data)){
+					return ( new Function( "return " + data ) )();
+				}
+			}
+		}
+        EZ.error( "Invalid JSON: " + data );
+    };
     
     /*
-        懶得打字 EZ.query  縮短成 ff;
+        Sizzle 選擇器 
     */
-    window.ff = EZ.query;
-    
+    (function(EZ){
+        
+        if( !document.querySelectorAll ){
+            EZ.load('sizzle');
+        }
+        
+    }(EZ));
+
 }(window, document, undefined));
-
-
-
-/*
-    Sizzle 選擇器 
-*/
-(function(EZ){
-    
-    if( !document.querySelectorAll ){
-        EZ.load('sizzle');
-    }
-    
-}(EZ));
-
-
 
 /*
 (function(){

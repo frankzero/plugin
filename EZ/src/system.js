@@ -681,29 +681,29 @@ EZ.system = (new function(){
         }
     }
     
-    this.ua;
+    // this.ua;
     
-    this.browser;
+    // this.browser;
     
-    this.version;
+    // this.version;
     
-    this.OS;
+    // this.OS;
     
-    this.isIE;
+    // this.isIE;
     
-    this.isChrome;
+    // this.isChrome;
     
-    this.isFirefox;
+    // this.isFirefox;
     
-    this.isOpera;
+    // this.isOpera;
     
-    this.isSafari;
+    // this.isSafari;
     
-    this.isMobile;
+    // this.isMobile;
     
-    this.isTablet;
+    // this.isTablet;
     
-    this.user_agent;
+    // this.user_agent;
     
     this.UAParser = UAParser;
     
