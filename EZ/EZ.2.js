@@ -52,8 +52,16 @@ if (typeof console == 'undefined') {
     */
     window.ff = EZ.query;
     
-    EZ.icon = {
-        'close' : '✖'
+    EZ.symbol = EZ.icon = {
+        'close' : '✕',
+        'close2' : '✖',
+        'checked' : '✔',
+        'checked2' : '✓',
+        'star' : '✫',
+        'fullstart' : '★', 
+        'cut' : '✄',
+        'arrow_up' : '▲',
+        'arrow_down' : '▼'
     };
     
     EZ.id = function(){
@@ -174,19 +182,11 @@ if (typeof console == 'undefined') {
     */
     EZ.watch = {
         
-        init : function(){
-            if(!this.watch){
-                this.watch = new EZ.stopwatch();
-                this.play = this._play;
-            }
-        },
-        
         play : function(){
-            this.init();
-            return this.watch.play();
-        },
-        
-        _play : function(){
+            this.watch = new EZ.stopwatch();
+            this.play = function(){
+                return this.watch.play();
+            }
             return this.watch.play();
         },
         
@@ -236,7 +236,7 @@ if (typeof console == 'undefined') {
     };
     
     EZ.isEmpty = function (obj) {
-        return (typeof obj == 'undefined' || obj === null || obj === '') ? true : false;
+        return (typeof obj === 'undefined' || obj === null || obj === '') ? true : false;
     };
     
     EZ.type = function(obj){
@@ -274,16 +274,61 @@ if (typeof console == 'undefined') {
         return EZ.type(obj) === "array";
     };
     
+    EZ.each = function(obj, callback, args){
+        var i,imax,o;
+        
+        for(i=0,imax=obj.length; i<imax; i++){
+            o = obj[i];
+            callback.apply(obj[i], args);
+        }
+    };
+    
+    EZ.isWindow = function(obj){
+        return obj != null && obj == obj.window;
+    };
+    
     /*
         querySelector 回傳的東西
         [object NodeList] 
         [object HTMLCollection]
         都可以當陣列只用 所以判定為 true
+        
     */
-    EZ.canbeArray = function(arr){
+    /*
+        EZ.canbeArray = EZ.isArraylike = function(arr){
+            var 
+            type,
+            len,
+            native_string
+            ;
+            
+            type = EZ.type(arr);
+            
+            native_string = Object.prototype.toString.call(arr);
+            
+            if( EZ.isEmpty(arr) || EZ.isWindow(arr) || !('length' in arr) ) return false;
+            
+            if( type === 'array') return true;
+            
+            if( arr.nodeType === 1 && 'length' in arr  && EZ.isNumeric(arr)) return true;
+            
+            if( native_string === '[object NodeList]' || native_string === '[object HTMLCollection]' ) return true;
+            
+            len = arr.length;
+            
+            return type !== "function" &&
+                ( len === 0 ||
+                typeof len === "number" && len > 0 && ( len - 1 ) in arr );
+            return false;
+            
+        };
+    */
+     EZ.canbeArray = function(arr){
         var 
         type
         ;
+        
+        if( EZ.isEmpty(arr) || EZ.isWindow(arr) || !('length' in arr) ) return false;
         
         type = Object.prototype.toString.call(arr);
         
@@ -293,6 +338,7 @@ if (typeof console == 'undefined') {
         
         return false;
     };
+    
     
     /*
         判斷是 html 元素
@@ -327,8 +373,13 @@ if (typeof console == 'undefined') {
         }
         return true;
     };
-
+    
     EZ.param = EZ.object_to_querystring = function(a){
+        
+        if(EZ.isHtmlElement(a)){
+            return Object.prototype.toString.call(a);
+        }
+        
         var s = [],
         add = function(key,value){
             value = EZ.isFunction(value) ? value() : (value === null ? "" : value);
@@ -339,8 +390,14 @@ if (typeof console == 'undefined') {
         i,
         imax,
         buildParams = function(prefix, obj, add){
-            var name,i,imax,v;
             
+            if(EZ.isHtmlElement(obj) || EZ.type(obj) === 'function'){
+                
+                return Object.prototype.toString.call(obj);
+            }
+            
+            var name,i,imax,v;
+            //debugger;
             if(EZ.isArray(obj)){
                 for(i=0,imax=obj.length; i<imax; i++){
                     v = obj[i];
@@ -477,6 +534,19 @@ if (typeof console == 'undefined') {
     };
     
     /*
+        從陣列移除item
+        remove item from array
+    */
+    EZ.removeFromArray = function(find ,arr){
+        
+        var index = EZ.arrayIndexOf(find, arr);
+        
+        if(index !== -1) arr.splice(index, 1);
+        
+        return arr;
+    };
+    
+    /*
         回傳bool 
     */
     EZ.in_array = function (find, myArray) {
@@ -487,6 +557,20 @@ if (typeof console == 'undefined') {
                 return true;
         }
         return false;
+    };
+    
+    EZ.unshift = function(item, arr){
+        if(EZ.type(arr) === 'array'){
+            arr.unshift(item);
+        }else{
+            var i,imax,arr2 = [item];
+            for(i=0,imax=arr.length; i<imax ;i++){
+                arr2[arr2.length] = arr[i];
+            }
+            arr = arr2;
+        }
+        return arr;
+        
     };
     
     // 自動左邊補0
@@ -735,39 +819,45 @@ if (typeof console == 'undefined') {
         return "";
     };
 
-    EZ._setCookie = function(name,value,time,unit,path){
-        unit = unit || '';
-        path = path || '/';
-        switch(unit){
-            case 'day':
-                time = time*86400000;
-                break;
-            case 'hour':
-                time = time*3600000;
-                break;
-            case 'minute':
-                time = time*60000;
-                break;
-            default:
-                if(!time){
-                    time=86400000;
-                }
-                break;
+    /*
+       global => 設在 /  全站都抓的到
+    */
+    EZ.setCookie = function(name, value, second, Path){
+        var expires;
+        
+        expires = EZ.Date().second(second).dateObject.toGMTString();
+        
+        if(expires == 'Invalid Date'){
+            console.log('cookie Invalid Date '+name+' '+value+' '+second );
         }
-        var d = new Date();
-        d.setTime(d.getTime()+(time));
-        var expires = "expires="+d.toGMTString();
-        document.cookie = name + "=" + value + ";Path="+path+';' + expires;
+        document.cookie = name + "=" + value + ";Path="+Path+";" + "expires="+expires;
     };
     
-    EZ.setCookie = function(name, value, day){
-        var expires = "expires="+EZ.Date().day(day).dateObject.toGMTString();
-        document.cookie = name + "=" + value + ";Path=/;" + expires;
-    };
-    
-    EZ.removeCookie = EZ.deleteCookie = function(name){
-        EZ.setCookie(name,'',-1);
+    EZ.removeCookie = EZ.deleteCookie = function(name, global){
+        
+        EZ.setCookie(name, '', -1, ( global ? '/' : '' ));
         //document.cookie = name + '=; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+    };
+    
+    EZ.cookie = function(name, value, day, global){
+        if(EZ.type(value) == 'undefined'){
+            return EZ.getCookie(name);
+        }else{
+            if(EZ.isNumeric(day)){
+                day = day*86400;
+            }else if(day.indexOf('hour') !== -1){
+                day = day.replace('hour','')*3600;
+            }else if(day.indexOf('minute') !== -1){
+                day = day.replace('minute','')*60;
+            }else if(day.indexOf('second') !== -1){
+                day = day.replace('second','')*1;
+            }else if(day.indexOf('month') !== -1){
+                day = day.replace('month','')*86400*30;
+            }else if(day.indexOf('day') !== -1){
+                day = day.replace('day','')*86400;
+            }
+            EZ.setCookie(name, value, day, ( global ? '/' : '' ));
+        }
     };
     
     //滑鼠座標
@@ -844,6 +934,10 @@ if (typeof console == 'undefined') {
                 },
                 second : function(i){
                     obj.setTime(obj.getTime()+i*1000);
+                    return Self;
+                },
+                setTime : function(i){
+                    obj.setTime(obj.getTime()+i);
                     return Self;
                 },
                 obj : obj,
@@ -1079,16 +1173,20 @@ if (typeof console == 'undefined') {
         http_request.send(EZ.object_to_querystring(params));
         
         http_request.onreadystatechange = function () {
-            if (http_request.readyState == 4 && http_request.status == 200) {
-                if (typeof callback == 'function') callback(http_request.responseText);
-            } else if(http_request.readyState == 4 ){
-                alert("Server is no response");
-            }
+            // if (http_request.readyState == 4 && http_request.status == 200) {
+                // if (typeof callback == 'function') callback(http_request.responseText);
+            // } else if(http_request.readyState == 4 ){
+                // alert("Server is no response");
+            // }
         }
     };
     
-    EZ.ajax = function(url, params, callback){
+    EZ.post = EZ.ajax = function(url, params, callback){
         EZ.request(url, 'POST' , params , callback);
+    };
+    
+    EZ.get = function(url, params, callback){
+        EZ.request(url, 'GET' , params , callback);
     };
     
     /*
@@ -1105,8 +1203,17 @@ if (typeof console == 'undefined') {
         
         fn : {},
         
-        removefn : function(id){
+        /*
+            移除事件 所有相關物件 
+        */
+        removefn : function(id ,el ,type ,handle){
+            
             delete this.fn[id];
+            
+            // 從 id群中 移除 id
+            EZ.removeFromArray(id, el.ezid);
+            
+            this.remove(el, type, handle);
         },
         
         /*
@@ -1142,7 +1249,7 @@ if (typeof console == 'undefined') {
             for(i=ezid.length; i>=0 ; i--){
                 id = ezid[i];
                 f = this.fn[id];
-                if(f){
+                if(EZ.type(f) === 'object'){
                     for(type in f){
                         EZ.removeEvent(el, type, f[type]);
                     }
@@ -1153,7 +1260,7 @@ if (typeof console == 'undefined') {
         add : function(el, type, handle){
             if(document.addEventListener){
                 EZ.event.add = function(el, type, handle){
-                    el.addEventListener(type, handle);
+                    el.addEventListener(type, handle, false); // true :capture , false : bubbling
                 }
             }else if(document.attachEvent){
                 EZ.event.add = function(el, type, handle){
@@ -1347,12 +1454,17 @@ if (typeof console == 'undefined') {
             fn
             ;
             
-            if( EZ.type(handle) == 'undefined'){
+            if(EZ.isEmpty(type)){
+                // 沒給 type  移除 element 上所以事件 
+                EZ.event.clean(el);
+                
+            }else if( EZ.type(handle) == 'undefined'){
                 // 移除所有 type 事件
                 //handle = handle || (EZ.event.fn[el.ezid] && EZ.event.fn[el.ezid][type]);
                 
                 ezid = el.ezid || [];
-                for(i=0,imax=ezid.length; i<imax; i++){
+                
+                for( i=ezid.length; i>=0 ; i-- ){
                     
                     id = ezid[i];
                     
@@ -1363,28 +1475,28 @@ if (typeof console == 'undefined') {
                         if( _type == type && fn.hasOwnProperty(_type)){
                             
                             _handle = fn[_type];
-                            EZ.event.removefn(id);
-                            EZ.event.remove(el, _type, _handle);
                             
-                            // 從 id群中 移除 id
-                            el.ezid.splice(EZ.arrayIndexOf(id, el.ezid), 1);
+                            EZ.event.removefn(id, el, _type, _handle);
+                            
                         }
                     }
                 }
+                
             }else{
             
                 ezid = el.ezid || [];
                 
-                for(i=0,imax=ezid.length; i<imax; i++){
+                //for(i=0,imax=ezid.length; i<imax; i++){
+                for( i=ezid.length; i>=0 ; i-- ){
+                    
                     id = ezid[i];
+                    
                     _handle = EZ.event.fn[id] && EZ.event.fn[id][type];
                     
                     if( _handle && _handle === handle ){
-                        EZ.event.removefn(id);
-                        EZ.event.remove(el, type, handle);
                         
-                        // 從 id群中 移除 id
-                        el.ezid.splice(EZ.arrayIndexOf(id, el.ezid), 1);
+                        EZ.event.removefn(id, el, type, handle);
+                        
                         break;
                     }
                     
@@ -1597,6 +1709,8 @@ if (typeof console == 'undefined') {
         
         remove : function(el, child){
             if(child){
+                //console.log(el);
+                //console.log(child);
                 el.removeChild(child);
             }else if(el.parentNode){
                 el.parentNode.removeChild(el);
@@ -1630,13 +1744,25 @@ if (typeof console == 'undefined') {
     */
     EZ.selector = function(selector, context, results, seed, EZ){
         
-        var self = this;
-        
         this.el = {};
         
         this.els = [];
         
-        this.init = function(selector, context, results, seed){
+        this.init(selector, context, results, seed);
+        
+    };
+    
+    EZ.selector.extend = function(obj){
+        var method;
+        for( method in obj ){
+            if(obj.hasOwnProperty(method)){
+                this.prototype[method] = obj[method];
+            }
+        }
+    };
+    
+    EZ.selector.extend({
+        init :function(selector, context, results, seed){
             
             if(EZ.isEventObject(selector)){
                 
@@ -1654,9 +1780,17 @@ if (typeof console == 'undefined') {
                 this.el = this.els[0] || {};
             }
             return this;
-        };
+        },
         
-        this.each = function(fn){
+        find : function(selector, results, seed){
+            return EZ.query(selector, this.els[0] ,results, seed);
+        },
+        
+        get : function(index){
+            return this.els[index];
+        },
+        
+        each : function(fn){
             
             var i,imax,el;
             
@@ -1666,27 +1800,9 @@ if (typeof console == 'undefined') {
             }
             
             return this;
-        };
+        },
         
-        this.addClass = function(cl){
-            
-            this.each(function(index, el){
-                EZ.addClass(el, cl);
-            });
-            
-            return this;
-        };
-        
-        this.removeClass = function(cl){
-            
-            this.each(function(index, el){
-                EZ.removeClass(el, cl);
-            });
-            
-            return this;
-        };
-        
-        this.attr = function(key, value){
+        attr : function(key, value){
             
             if(EZ.type(value) == 'undefined'){
                 return EZ.attr(this.els[0], key);
@@ -1697,84 +1813,14 @@ if (typeof console == 'undefined') {
             }
             
             return this;
-        };
+        },
         
-        this.removeAttr = function(key){
-            this.each(function(index, el){
-                EZ.removeAttr(el, key);
-            });
-            
-            return this;
-        }
-        
-        this.css = function(style, value){
-            
-            this.each(function(index, el){
-                EZ.css(el, style, value);
-            });
-            
-            return this;
-        };
-        
-        this.removeCss = function(style){
-            
-            this.each(function(index, el){
-                EZ.removeCss(el, style);
-            });
-            
-            return this;
-        };
-        
-        this.addEvent = this.on = function(type, handle){
-            
-            this.each(function(index, el){
-                EZ.addEvent(el, type, handle);
-            });
-            
-            return this;
-        };
-        
-        this.removeEvent = this.off = function(type, handle){
-            
-            if(EZ.type(type) !== 'undefined'){
-                
-                this.each(function(index, el){
-                    EZ.removeEvent(el, type, handle);
-                });
-                
-            }else{
-                
-                this.each(function(index, el){
-                    EZ.event.clean(el);
-                });
-                
-            }
-            
-            return this;
-        };
-        
-        this.hasClass = function(cls){
+        hasClass : function(cls){
             if(typeof this.els[0] == 'undefined') return false;
             return EZ.hasClass(this.els[0], cls);
-        };
+        },
         
-        this.toggleClass = function(cls){
-            this.each(function(index, el){
-                EZ.toggleClass(el, cls);
-            });
-            
-            return this;
-        };
-
-        this.get = function(index){
-            return this.els[index];
-        };
-        
-        this.find = function(selector, results, seed){
-            return EZ.query(selector, this.els[0] ,results, seed);
-        };
-        
-        this.html = function(content){
+        html : function(content){
             
             if(EZ.type(content) !== 'undefined'){
                 this.each(function(index, el){
@@ -1785,27 +1831,18 @@ if (typeof console == 'undefined') {
             }
             
             return this;
-        };
+        },
         
-        this.empty = function(){
-            
-            this.each(function(index, el){
-                EZ.empty(el);
-            });
-            
-            return this;
-        };
-        
-        this.clean = function(){
+        clean : function(){
             
             this.each(function(index, el){
                 EZ.event.clean(el);
             });
             
             return this;
-        };
+        },
         
-        this.val = function(value){
+        val : function(value){
             
             if(EZ.type(value) == 'undefined'){
                 return EZ.val(this.els[0]);
@@ -1815,41 +1852,124 @@ if (typeof console == 'undefined') {
                 });
             }
             return this;
-        };
+        },
         
-        this.width = function(){
+        width : function(){
             
             return EZ.width(this.els[0]);
             
-        };
+        },
         
-        this.height = function(){
+        height : function(){
             
             return EZ.height(this.els[0]);
             
-        };
+        },
         
-        this.append = function(child){
+        addClass : function(cl){
+            this.each(function(index, el){
+                EZ.addClass(el, cl);
+            });
             
+            return this;
+        },
+        
+        removeClass : function(cl){
+            this.each(function(index, el){
+                EZ.removeClass(el, cl);
+            });
+            
+            return this;
+        },
+        
+        removeAttr : function(key){
+            this.each(function(index, el){
+                EZ.removeAttr(el, key);
+            });
+            
+            return this;
+        },
+        
+        css : function(style, value){
+            this.each(function(index, el){
+                EZ.css(el, style, value);
+            });
+            
+            return this;
+        },
+        
+        removeCss : function(style){
+            this.each(function(index, el){
+                EZ.removeCss(el, style);
+            });
+            
+            return this;
+        },
+        
+        addEvent : function(type, handle){
+            this.each(function(index, el){
+                EZ.addEvent(el, type, handle);
+            });
+            
+            return this;
+        },
+        
+        on : function(type, handle){
+        
+            this.addEvent(type, handle);
+            
+            return this;
+        },
+        
+        removeEvent : function(type, handle){
+            this.each(function(index, el){
+                EZ.removeEvent(el, type, handle);
+            });
+            
+            return this;
+        },
+        
+        off : function(type, handle){
+        
+            this.removeEvent(type, handle);
+            
+            return this;
+        },
+        
+        toggleClass : function(cls){
+            this.each(function(index, el){
+                EZ.toggleClass(el, cls);
+            });
+            
+            return this;
+        },
+        
+        empty : function(){
+            this.each(function(index, el){
+                EZ.empty(el);
+            });
+            
+            return this;
+        },
+        
+        
+        append : function(child){
             this.each(function(index, el){
                 EZ.append(el, child);
             });
             
             return this;
-        };
+        },
         
-        this.remove = function(child){
-            
+        remove : function(child){
             this.each(function(index, el){
                 EZ.remove(el, child);
             });
             
             return this;
-        };
-        
-        this.init(selector, context, results, seed);
-        
-    };
+        }
+    });
+    
     
     /*
         簡便視窗 
@@ -1933,8 +2053,8 @@ if (typeof console == 'undefined') {
                     self.window_content.el.innerHTML = options.content;
                 }
                 
-                //ff(document.body).append(self.window.el);
-                ff(self.window.el).css('display', '');
+                ff(document.body).append(self.window.el);
+                //ff(self.window.el).css('display', '');
                 
                 setTimeout(function(){
                     ff(self.window.el).css('top','50%');
@@ -1950,7 +2070,8 @@ if (typeof console == 'undefined') {
                 ff(self.window.el).css('opacity','0');
                 
                 setTimeout(function(){
-                    ff(self.window.el).css('display', 'none');
+                    ff(document.body).remove(self.window.el);
+                    //ff(self.window.el).css('display', 'none');
                     /*
                     if(self.window.el.parentNode == document.body){
                         ff(document.body).remove(self.window.el);
@@ -1968,7 +2089,7 @@ if (typeof console == 'undefined') {
                 
                 ff(el).css('background-color','#fff');
                 ff(el).css('border' , '3px solid #fff' );
-                ff(el).css('display' , 'none' );
+                //ff(el).css('display' , 'none' );
                 ff(el).css('left' , '50%' );
                 ff(el).css('padding' , '15px' );
                 ff(el).css('position' , 'fixed' );
@@ -2131,33 +2252,33 @@ if (typeof console == 'undefined') {
     };
 
     /*
-        要先跑 init 在使用
-        EZ._GET.init();  
-        EZ._GET['a'];
+        EZ._GET('a');
     */
-    EZ._GET = {
-        init : function(){
-            var s,_get,i,imax,d
-            ;
-            _get={};
-            
-            s= document.location.toString();
-            
-            
-            if (s.indexOf('?') == -1) {
-                return _get;
-            }
-            
-            s = s.split('?');
-            s = s[1].split('&');
-            for(i=0,imax=s.length; i<imax; i++){
-                d = s[i].split('=');
-                _get[d[0]] = d[1];
-            }
-            
-            EZ._GET = _get;
+    EZ._GET = function(key){
+        var s,_get,i,imax,d
+        ;
+        _get={};
+        
+        s= document.location.toString();
+        
+        
+        if (s.indexOf('?') == -1) {
+            return _get;
         }
+        
+        s = s.split('?');
+        s = s[1].split('&');
+        for(i=0,imax=s.length; i<imax; i++){
+            d = s[i].split('=');
+            _get[d[0]] = d[1];
+        }
+        
+        EZ._GET = function(key){
+            return _get[key];
+        }
+        return _get[key];
     };
+    
     /*
         以上都是 function  執行程式放此之下
         init 
@@ -2201,10 +2322,11 @@ if (typeof console == 'undefined') {
     
      
     (function(EZ){
-        var key;
-        for(key in EZ.elements){
-            if(EZ.elements.hasOwnProperty(key)){
-                EZ[key] = EZ.elements[key];
+        var method;
+        for(method in EZ.elements){
+            if(EZ.elements.hasOwnProperty(method)){
+                EZ[method] = EZ.elements[method];
+                
             }
         }
     }(EZ));
@@ -2351,4 +2473,100 @@ if (typeof console == 'undefined') {
     js.src = 'http://frankzero.com.tw/plugin/EZ/EZ.2.js';
     fjs.parentNode.insertBefore(js,fjs);
 }());
+*/
+
+
+/*
+var qq = function(){}
+qq.fn = qq.prototype = {
+	constructor: qq,
+	init: function( selector, context, rootjQuery ) {
+		
+	},
+
+	// Start with an empty selector
+	selector: "",
+
+	// The default length of a jQuery object is 0
+	length: 0,
+
+	toArray: function() {
+		return [].slice.call( this );
+	},
+
+	// Get the Nth element in the matched element set OR
+	// Get the whole matched element set as a clean array
+	get: function( num ) {
+		return num == null ?
+
+			// Return a 'clean' array
+			this.toArray() :
+
+			// Return just the object
+			( num < 0 ? this[ this.length + num ] : this[ num ] );
+	},
+
+	// Take an array of elements and push it onto the stack
+	// (returning the new matched element set)
+	pushStack: function( elems ) {
+
+		// Build a new jQuery matched element set
+		var ret = EZ.merge( this.constructor(), elems );
+
+		// Add the old object onto the stack (as a reference)
+		ret.prevObject = this;
+		ret.context = this.context;
+
+		// Return the newly-formed element set
+		return ret;
+	},
+
+	// Execute a callback for every element in the matched set.
+	// (You can seed the arguments with an array of args, but this is
+	// only used internally.)
+	each: function( callback, args ) {
+		return EZ.each( this, callback, args );
+	},
+
+	ready: function( fn ) {
+		// Add the callback
+		//jQuery.ready.promise().done( fn );
+
+		return this;
+	},
+
+	slice: function() {
+		return this.pushStack( [].slice.apply( this, arguments ) );
+	},
+
+	first: function() {
+		return this.eq( 0 );
+	},
+
+	last: function() {
+		return this.eq( -1 );
+	},
+
+	eq: function( i ) {
+		var len = this.length,
+			j = +i + ( i < 0 ? len : 0 );
+		return this.pushStack( j >= 0 && j < len ? [ this[j] ] : [] );
+	},
+
+	map: function( callback ) {
+		return this.pushStack( jQuery.map(this, function( elem, i ) {
+			return callback.call( elem, i, elem );
+		}));
+	},
+
+	end: function() {
+		return this.prevObject || this.constructor(null);
+	},
+
+	// For internal use only.
+	// Behaves like an Array's method, not like a jQuery method.
+	push: [].push,
+	sort: [].sort,
+	splice: [].splice
+};
 */

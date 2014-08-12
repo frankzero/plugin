@@ -13,7 +13,30 @@ if (typeof console == 'undefined') {
     core_rnotwhite = /\S+/g,
     rspaces = /\s+/,
     rclass = /[\n\t]/g,
-    class2type={},
+    class2type = {},
+    cssNumber = {
+		"columnCount": true,
+		"fillOpacity": true,
+		"fontWeight": true,
+		"lineHeight": true,
+		"opacity": true,
+		"order": true,
+		"orphans": true,
+		"widows": true,
+		"zIndex": true,
+		"zoom": true
+	},
+    /*
+        style name 
+    */
+    rmsPrefix = /^-ms-/,
+    rdashAlpha = /-([\da-z])/gi,
+    
+    // 改 styleu名稱用 
+    right_style_name_case = function( all, letter ) {
+        return letter.toUpperCase();
+    },
+    
     core_toString = class2type.toString
     ;
     
@@ -29,8 +52,16 @@ if (typeof console == 'undefined') {
     */
     window.ff = EZ.query;
     
-    EZ.stringicon = {
-        'close' : '✖'
+    EZ.symbol = EZ.icon = {
+        'close' : '✕',
+        'close2' : '✖',
+        'checked' : '✔',
+        'checked2' : '✓',
+        'star' : '✫',
+        'fullstart' : '★', 
+        'cut' : '✄',
+        'arrow_up' : '▲',
+        'arrow_down' : '▼'
     };
     
     EZ.id = function(){
@@ -151,19 +182,11 @@ if (typeof console == 'undefined') {
     */
     EZ.watch = {
         
-        init : function(){
-            if(!this.watch){
-                this.watch = new EZ.stopwatch();
-                this.play = this._play;
-            }
-        },
-        
         play : function(){
-            this.init();
-            return this.watch.play();
-        },
-        
-        _play : function(){
+            this.watch = new EZ.stopwatch();
+            this.play = function(){
+                return this.watch.play();
+            }
             return this.watch.play();
         },
         
@@ -213,7 +236,7 @@ if (typeof console == 'undefined') {
     };
     
     EZ.isEmpty = function (obj) {
-        return (typeof obj == 'undefined' || obj === null || obj === '') ? true : false;
+        return (typeof obj === 'undefined' || obj === null || obj === '') ? true : false;
     };
     
     EZ.type = function(obj){
@@ -251,16 +274,61 @@ if (typeof console == 'undefined') {
         return EZ.type(obj) === "array";
     };
     
+    EZ.each = function(obj, callback, args){
+        var i,imax,o;
+        
+        for(i=0,imax=obj.length; i<imax; i++){
+            o = obj[i];
+            callback.apply(obj[i], args);
+        }
+    };
+    
+    EZ.isWindow = function(obj){
+        return obj != null && obj == obj.window;
+    };
+    
     /*
         querySelector 回傳的東西
         [object NodeList] 
         [object HTMLCollection]
         都可以當陣列只用 所以判定為 true
+        
     */
-    EZ.canbeArray = function(arr){
+    /*
+        EZ.canbeArray = EZ.isArraylike = function(arr){
+            var 
+            type,
+            len,
+            native_string
+            ;
+            
+            type = EZ.type(arr);
+            
+            native_string = Object.prototype.toString.call(arr);
+            
+            if( EZ.isEmpty(arr) || EZ.isWindow(arr) || !('length' in arr) ) return false;
+            
+            if( type === 'array') return true;
+            
+            if( arr.nodeType === 1 && 'length' in arr  && EZ.isNumeric(arr)) return true;
+            
+            if( native_string === '[object NodeList]' || native_string === '[object HTMLCollection]' ) return true;
+            
+            len = arr.length;
+            
+            return type !== "function" &&
+                ( len === 0 ||
+                typeof len === "number" && len > 0 && ( len - 1 ) in arr );
+            return false;
+            
+        };
+    */
+     EZ.canbeArray = function(arr){
         var 
         type
         ;
+        
+        if( EZ.isEmpty(arr) || EZ.isWindow(arr) || !('length' in arr) ) return false;
         
         type = Object.prototype.toString.call(arr);
         
@@ -270,6 +338,7 @@ if (typeof console == 'undefined') {
         
         return false;
     };
+    
     
     /*
         判斷是 html 元素
@@ -282,6 +351,16 @@ if (typeof console == 'undefined') {
         return (el && el.tagName && el.nodeType ) ? true : false;
         
     };
+    
+    /*
+        判斷是 事件 物件   
+        [object KeyboardEvent]
+        [object mouseEvent]
+        [object pointerEvent] IE
+    */
+    EZ.isEventObject = function(e){
+        return (Object.prototype.toString.call(e).toUpperCase().indexOf('EVENT') != -1) ? true : false;
+    }
     
     EZ.isNumeric = function(obj){
         return !isNaN( parseFloat(obj) ) && isFinite( obj );
@@ -444,6 +523,19 @@ if (typeof console == 'undefined') {
     };
     
     /*
+        從陣列移除item
+        remove item from array
+    */
+    EZ.removeFromArray = function(find ,arr){
+        
+        var index = EZ.arrayIndexOf(find, arr);
+        
+        if(index !== -1) arr.splice(index, 1);
+        
+        return arr;
+    };
+    
+    /*
         回傳bool 
     */
     EZ.in_array = function (find, myArray) {
@@ -454,6 +546,20 @@ if (typeof console == 'undefined') {
                 return true;
         }
         return false;
+    };
+    
+    EZ.unshift = function(item, arr){
+        if(EZ.type(arr) === 'array'){
+            arr.unshift(item);
+        }else{
+            var i,imax,arr2 = [item];
+            for(i=0,imax=arr.length; i<imax ;i++){
+                arr2[arr2.length] = arr[i];
+            }
+            arr = arr2;
+        }
+        return arr;
+        
     };
     
     // 自動左邊補0
@@ -702,39 +808,45 @@ if (typeof console == 'undefined') {
         return "";
     };
 
-    EZ._setCookie = function(name,value,time,unit,path){
-        unit = unit || '';
-        path = path || '/';
-        switch(unit){
-            case 'day':
-                time = time*86400000;
-                break;
-            case 'hour':
-                time = time*3600000;
-                break;
-            case 'minute':
-                time = time*60000;
-                break;
-            default:
-                if(!time){
-                    time=86400000;
-                }
-                break;
+    /*
+       global => 設在 /  全站都抓的到
+    */
+    EZ.setCookie = function(name, value, second, Path){
+        var expires;
+        
+        expires = EZ.Date().second(second).dateObject.toGMTString();
+        
+        if(expires == 'Invalid Date'){
+            console.log('cookie Invalid Date '+name+' '+value+' '+second );
         }
-        var d = new Date();
-        d.setTime(d.getTime()+(time));
-        var expires = "expires="+d.toGMTString();
-        document.cookie = name + "=" + value + ";Path="+path+';' + expires;
+        document.cookie = name + "=" + value + ";Path="+Path+";" + "expires="+expires;
     };
     
-    EZ.setCookie = function(name, value, day){
-        var expires = "expires="+EZ.Date().day(day).dateObject.toGMTString();
-        document.cookie = name + "=" + value + ";Path=/;" + expires;
-    };
-    
-    EZ.removeCookie = EZ.deleteCookie = function(name){
-        EZ.setCookie(name,'',-1);
+    EZ.removeCookie = EZ.deleteCookie = function(name, global){
+        
+        EZ.setCookie(name, '', -1, ( global ? '/' : '' ));
         //document.cookie = name + '=; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+    };
+    
+    EZ.cookie = function(name, value, day, global){
+        if(EZ.type(value) == 'undefined'){
+            return EZ.getCookie(name);
+        }else{
+            if(EZ.isNumeric(day)){
+                day = day*86400;
+            }else if(day.indexOf('hour') !== -1){
+                day = day.replace('hour','')*3600;
+            }else if(day.indexOf('minute') !== -1){
+                day = day.replace('minute','')*60;
+            }else if(day.indexOf('second') !== -1){
+                day = day.replace('second','')*1;
+            }else if(day.indexOf('month') !== -1){
+                day = day.replace('month','')*86400*30;
+            }else if(day.indexOf('day') !== -1){
+                day = day.replace('day','')*86400;
+            }
+            EZ.setCookie(name, value, day, ( global ? '/' : '' ));
+        }
     };
     
     //滑鼠座標
@@ -811,6 +923,10 @@ if (typeof console == 'undefined') {
                 },
                 second : function(i){
                     obj.setTime(obj.getTime()+i*1000);
+                    return Self;
+                },
+                setTime : function(i){
+                    obj.setTime(obj.getTime()+i);
                     return Self;
                 },
                 obj : obj,
@@ -1058,12 +1174,31 @@ if (typeof console == 'undefined') {
         EZ.request(url, 'POST' , params , callback);
     };
     
+    /*
+        類似 background-color => backgroundColor 的行為 
+    */
+    EZ.right_style_name = function(string){
+            return string.replace( rmsPrefix, "ms-" ).replace( rdashAlpha, right_style_name_case );
+    };
+
+    /*
+        事件處理器
+    */
     EZ.event = {
         
         fn : {},
         
-        removefn : function(id){
+        /*
+            移除事件 所有相關物件 
+        */
+        removefn : function(id ,el ,type ,handle){
+            
             delete this.fn[id];
+            
+            // 從 id群中 移除 id
+            EZ.removeFromArray(id, el.ezid);
+            
+            this.remove(el, type, handle);
         },
         
         /*
@@ -1099,7 +1234,7 @@ if (typeof console == 'undefined') {
             for(i=ezid.length; i>=0 ; i--){
                 id = ezid[i];
                 f = this.fn[id];
-                if(f){
+                if(EZ.type(f) === 'object'){
                     for(type in f){
                         EZ.removeEvent(el, type, f[type]);
                     }
@@ -1110,7 +1245,7 @@ if (typeof console == 'undefined') {
         add : function(el, type, handle){
             if(document.addEventListener){
                 EZ.event.add = function(el, type, handle){
-                    el.addEventListener(type, handle);
+                    el.addEventListener(type, handle, false); // true :capture , false : bubbling
                 }
             }else if(document.attachEvent){
                 EZ.event.add = function(el, type, handle){
@@ -1200,9 +1335,29 @@ if (typeof console == 'undefined') {
             }
         },
         
-        css : function(el, style, value){
-            if(EZ.type(el) != 'undefined' && EZ.type(el.style) == 'object')
-            el.style[style] = value;
+        css : function(el, styleName, value){
+            
+            var originName = styleName;
+            
+            if( !EZ.isHtmlElement(el) ) return ;
+            
+            // Don't set styles on text and comment nodes
+            if ( !el || el.nodeType === 3 || el.nodeType === 8 || !el.style ) return;
+            
+            styleName = EZ.right_style_name(styleName);
+            
+            // If a number was passed in, add 'px' to the (except for certain CSS properties)
+			if ( EZ.isNumeric(value) && !cssNumber[ styleName ] ) {
+				value += "px";
+			}
+            
+            //console.log(originName+' = '+styleName+' = '+value);
+                
+            try{
+            el.style[styleName] = value;
+            }catch(e){
+                console.log(styleName+' '+value);
+            }
         },
         
         removeCss : function(el, style){
@@ -1284,12 +1439,17 @@ if (typeof console == 'undefined') {
             fn
             ;
             
-            if( EZ.type(handle) == 'undefined'){
+            if(EZ.isEmpty(type)){
+                // 沒給 type  移除 element 上所以事件 
+                EZ.event.clean(el);
+                
+            }else if( EZ.type(handle) == 'undefined'){
                 // 移除所有 type 事件
                 //handle = handle || (EZ.event.fn[el.ezid] && EZ.event.fn[el.ezid][type]);
                 
                 ezid = el.ezid || [];
-                for(i=0,imax=ezid.length; i<imax; i++){
+                
+                for( i=ezid.length; i>=0 ; i-- ){
                     
                     id = ezid[i];
                     
@@ -1300,28 +1460,28 @@ if (typeof console == 'undefined') {
                         if( _type == type && fn.hasOwnProperty(_type)){
                             
                             _handle = fn[_type];
-                            EZ.event.removefn(id);
-                            EZ.event.remove(el, _type, _handle);
                             
-                            // 從 id群中 移除 id
-                            el.ezid.splice(EZ.arrayIndexOf(id, el.ezid), 1);
+                            EZ.event.removefn(id, el, _type, _handle);
+                            
                         }
                     }
                 }
+                
             }else{
             
                 ezid = el.ezid || [];
                 
-                for(i=0,imax=ezid.length; i<imax; i++){
+                //for(i=0,imax=ezid.length; i<imax; i++){
+                for( i=ezid.length; i>=0 ; i-- ){
+                    
                     id = ezid[i];
+                    
                     _handle = EZ.event.fn[id] && EZ.event.fn[id][type];
                     
                     if( _handle && _handle === handle ){
-                        EZ.event.removefn(id);
-                        EZ.event.remove(el, type, handle);
                         
-                        // 從 id群中 移除 id
-                        el.ezid.splice(EZ.arrayIndexOf(id, el.ezid), 1);
+                        EZ.event.removefn(id, el, type, handle);
+                        
                         break;
                     }
                     
@@ -1359,6 +1519,10 @@ if (typeof console == 'undefined') {
         },
         
         html : function(el, content){
+            
+            if(EZ.type(content) == 'undefined'){
+                return el.innerHTML;
+            }
             
             EZ.empty(el);
             
@@ -1522,15 +1686,20 @@ if (typeof console == 'undefined') {
                 
                 el.appendChild(tmp);
                 
-            }else{
+            }else if( EZ.isHtmlElement(el) && EZ.isHtmlElement(child) ){
                 el.appendChild(child);
             }
             
         },
         
-        remove : function(el){
-            if(el.parentNode)
+        remove : function(el, child){
+            if(child){
+                //console.log(el);
+                //console.log(child);
+                el.removeChild(child);
+            }else if(el.parentNode){
                 el.parentNode.removeChild(el);
+            }
         }
     };
     
@@ -1560,11 +1729,53 @@ if (typeof console == 'undefined') {
     */
     EZ.selector = function(selector, context, results, seed, EZ){
         
-        var self = this;
+        this.el = {};
         
         this.els = [];
         
-        this.each = function(fn){
+        this.init(selector, context, results, seed);
+        
+    };
+    
+    EZ.selector.extend = function(obj){
+        var method;
+        for( method in obj ){
+            if(obj.hasOwnProperty(method)){
+                this.prototype[method] = obj[method];
+            }
+        }
+    };
+    
+    EZ.selector.extend({
+        init :function(selector, context, results, seed){
+            
+            if(EZ.isEventObject(selector)){
+                
+                /*
+                    直接從 Event Object 把 Element 找出來 
+                */
+                selector = selector || window.event;
+                this.el = selector.target || selector.srcElement;
+                this.els = [this.el];
+            }else if(EZ.type(selector) == 'object'){
+                this.els = EZ.canbeArray(selector) ? selector: [selector];
+                this.el = this.els[0] || {};
+            }else{
+                this.els = EZ.find(selector, context, results, seed);
+                this.el = this.els[0] || {};
+            }
+            return this;
+        },
+        
+        find : function(selector, results, seed){
+            return EZ.query(selector, this.els[0] ,results, seed);
+        },
+        
+        get : function(index){
+            return this.els[index];
+        },
+        
+        each : function(fn){
             
             var i,imax,el;
             
@@ -1574,27 +1785,9 @@ if (typeof console == 'undefined') {
             }
             
             return this;
-        };
+        },
         
-        this.addClass = function(cl){
-            
-            this.each(function(index, el){
-                EZ.addClass(el, cl);
-            });
-            
-            return this;
-        };
-        
-        this.removeClass = function(cl){
-            
-            this.each(function(index, el){
-                EZ.removeClass(el, cl);
-            });
-            
-            return this;
-        };
-        
-        this.attr = function(key, value){
+        attr : function(key, value){
             
             if(EZ.type(value) == 'undefined'){
                 return EZ.attr(this.els[0], key);
@@ -1605,123 +1798,36 @@ if (typeof console == 'undefined') {
             }
             
             return this;
-        };
+        },
         
-        this.removeAttr = function(key){
-            this.each(function(index, el){
-                EZ.removeAttr(el, key);
-            });
-            
-            return this;
-        }
-        
-        this.css = function(style, value){
-            
-            this.each(function(index, el){
-                EZ.css(el, style, value);
-            });
-            
-            return this;
-        };
-        
-        this.removeCss = function(style){
-            
-            this.each(function(index, el){
-                EZ.removeCss(el, style);
-            });
-            
-            return this;
-        };
-        
-        this.addEvent = function(type, handle){
-            this.each(function(index, el){
-                EZ.addEvent(el, type, handle);
-            });
-            
-            return this;
-        };
-        
-        this.on = this.addEvent;
-        
-        this.removeEvent = function(type, handle){
-            
-            if(EZ.type(type) !== 'undefined'){
-                
-                this.each(function(index, el){
-                    EZ.removeEvent(el, type, handle);
-                });
-                
-            }else{
-                
-                this.each(function(index, el){
-                    EZ.event.clean(el);
-                });
-                
-            }
-            
-            return this;
-        };
-        
-        this.off = this.removeEvent;
-        
-        this.hasClass = function(cls){
+        hasClass : function(cls){
             if(typeof this.els[0] == 'undefined') return false;
             return EZ.hasClass(this.els[0], cls);
-        };
+        },
         
-        this.toggleClass = function(cls){
-            this.each(function(index, el){
-                EZ.toggleClass(el, cls);
-            });
+        html : function(content){
             
-            return this;
-        };
-
-        this.get = function(index){
-            return this.els[index];
-        };
-        
-        this.init = function(selector, context, results, seed){
-            if(EZ.type(selector) == 'object'){
-                this.els = EZ.canbeArray(selector) ? selector: [selector];
+            if(EZ.type(content) !== 'undefined'){
+                this.each(function(index, el){
+                    EZ.html(el,content);
+                });
             }else{
-                this.els = EZ.find(selector, context, results, seed);
+                return EZ.html(this.els[0]);
             }
-            return this;
-        };
-        
-        this.find = function(selector, results, seed){
-            return EZ.query(selector, this.els[0] ,results, seed);
-        };
-        
-        this.html = function(content){
-            
-            this.each(function(index, el){
-                EZ.html(el,content);
-            });
             
             return this;
-        };
+        },
         
-        this.empty = function(){
-            
-            this.each(function(index, el){
-                EZ.empty(el);
-            });
-            
-            return this;
-        };
-        
-        this.clean = function(){
+        clean : function(){
             
             this.each(function(index, el){
                 EZ.event.clean(el);
             });
             
             return this;
-        };
+        },
         
-        this.val = function(value){
+        val : function(value){
             
             if(EZ.type(value) == 'undefined'){
                 return EZ.val(this.els[0]);
@@ -1731,73 +1837,436 @@ if (typeof console == 'undefined') {
                 });
             }
             return this;
-        };
+        },
         
-        this.width = function(){
+        width : function(){
             
             return EZ.width(this.els[0]);
             
-        };
+        },
         
-        this.height = function(){
+        height : function(){
             
             return EZ.height(this.els[0]);
             
-        };
+        },
         
-        this.append = function(child){
+        addClass : function(cl){
+            this.each(function(index, el){
+                EZ.addClass(el, cl);
+            });
             
+            return this;
+        },
+        
+        removeClass : function(cl){
+            this.each(function(index, el){
+                EZ.removeClass(el, cl);
+            });
+            
+            return this;
+        },
+        
+        removeAttr : function(key){
+            this.each(function(index, el){
+                EZ.removeAttr(el, key);
+            });
+            
+            return this;
+        },
+        
+        css : function(style, value){
+            this.each(function(index, el){
+                EZ.css(el, style, value);
+            });
+            
+            return this;
+        },
+        
+        removeCss : function(style){
+            this.each(function(index, el){
+                EZ.removeCss(el, style);
+            });
+            
+            return this;
+        },
+        
+        addEvent : function(type, handle){
+            this.each(function(index, el){
+                EZ.addEvent(el, type, handle);
+            });
+            
+            return this;
+        },
+        
+        on : function(type, handle){
+        
+            this.addEvent(type, handle);
+            
+            return this;
+        },
+        
+        removeEvent : function(type, handle){
+            this.each(function(index, el){
+                EZ.removeEvent(el, type, handle);
+            });
+            
+            return this;
+        },
+        
+        off : function(type, handle){
+        
+            this.removeEvent(type, handle);
+            
+            return this;
+        },
+        
+        toggleClass : function(cls){
+            this.each(function(index, el){
+                EZ.toggleClass(el, cls);
+            });
+            
+            return this;
+        },
+        
+        empty : function(){
+            this.each(function(index, el){
+                EZ.empty(el);
+            });
+            
+            return this;
+        },
+        
+        
+        append : function(child){
             this.each(function(index, el){
                 EZ.append(el, child);
             });
             
             return this;
-        };
+        },
         
-        this.remove = function(){
-            
+        remove : function(child){
             this.each(function(index, el){
-                EZ.remove(el);
+                EZ.remove(el, child);
             });
             
             return this;
+        }
+    });
+    
+    
+    /*
+        簡便視窗 
+    */
+    EZ.window = function(options){
+        var self = this;
+        
+        options = options || {};
+        options.window_style = options.window_style || {};
+        options.mask_style = options.mask_style || {};
+        options.content_style = options.content_style || {};
+        options.close_button_style = options.close_button_style || {};
+        options.onopen = options.onopen || EZ.emptyFN;
+        options.onclose = options.onclose || EZ.emptyFN;
+        
+        
+        this.open = function(e){
+            options.onopen(e);
+            self.mask.show(e);
+            self.window.show(e);
         };
         
-        this.init(selector, context, results, seed);
+        this.close = function(e){
+            options.onclose(e);
+            self.mask.hide();
+            self.window.hide();
+        };
         
+        this.init = function(){
+            var key,v;
+            
+            for(key in options.window_style){
+                if(options.window_style.hasOwnProperty(key)){
+                    ff(this.window.el).css(key, options.window_style[key]);
+                }
+            }
+            
+            for(key in options.mask_style){
+                if(options.mask_style.hasOwnProperty(key)){
+                    ff(this.mask.el).css(key, options.mask_style[key]);
+                }
+            }
+            
+            for(key in options.content_style){
+                if(options.content_style.hasOwnProperty(key)){
+                    ff(this.window_content.el).css(key, options.content_style[key]);
+                }
+            }
+            
+            for(key in options.close_button_style){
+                if(options.close_button_style.hasOwnProperty(key)){
+                    ff(this.close_button.el).css(key, options.close_button_style[key]);
+                }
+            }
+        };
+        
+        this.mouseCoords = function (e) {
+            e = e || window.event;
+            if (e.pageX || e.pageY) {
+                return {
+                    x : e.pageX,
+                    y : e.pageY
+                };
+            }
+            return {
+                x : e.clientX + document.body.scrollLeft - document.body.clientLeft,
+                y : e.clientY + document.body.scrollTop - document.body.clientTop
+            };
+        };
+        
+        this.window = {
+            
+            el : document.createElement('div'),
+            
+            show : function(e){
+                
+                e = e || window.event;
+                
+                if(typeof e == 'string' || typeof e == 'number'){
+                    options.content = e;
+                    self.window_content.el.innerHTML = options.content;
+                }
+                
+                //ff(document.body).append(self.window.el);
+                ff(self.window.el).css('display', '');
+                
+                setTimeout(function(){
+                    ff(self.window.el).css('top','50%');
+                    ff(self.window.el).css('opacity','1');
+                },100);
+                
+            },
+            
+            hide : function(e){
+                
+                ff(self.window.el).css('top','40%');
+                
+                ff(self.window.el).css('opacity','0');
+                
+                setTimeout(function(){
+                    ff(self.window.el).css('display', 'none');
+                    /*
+                    if(self.window.el.parentNode == document.body){
+                        ff(document.body).remove(self.window.el);
+                    }
+                    */
+                },500);
+                
+            },
+            
+            init : function(){
+                var el
+                ;
+                
+                el = this.el;
+                
+                ff(el).css('background-color','#fff');
+                ff(el).css('border' , '3px solid #fff' );
+                ff(el).css('display' , 'none' );
+                ff(el).css('left' , '50%' );
+                ff(el).css('padding' , '15px' );
+                ff(el).css('position' , 'fixed' );
+                ff(el).css('text-align' , 'justify' );
+                ff(el).css('z-index' , '10' );
+                ff(el).css('transform' , 'translate(-50%, -50%)' );
+                ff(el).css('border-radius' , '10px' );
+                ff(el).css('box-shadow' , '0 1px 1px 2px rgba(0, 0, 0, 0.4) inset' );
+                ff(el).css('transition' , 'opacity .5s, top .5s' );
+                ff(el).css('-webkit-transition' , 'opacity .5s, top .5s' );
+                ff(el).css('min-width' , '200px' );
+                ff(el).css('min-height' , '200px' );
+                ff(el).css('box-shadow' , 'rgba(0, 0, 0, 0.8) 0px 4px 16px' );
+                ff(el).css('z-index', 1000 );
+                ff(el).css('opacity' , '0' );
+                ff(el).css('top' , '40%' );
+                
+                ff(document.body).append(el);
+            }
+        };
+        
+        this.window.init();
+      
+        this.window_content = {
+            el : document.createElement('div'),
+            
+            init : function(){
+                ff(this.el).append(options.content);
+            }
+        };
+        
+        this.window_content.init();
+        
+        this.mask = {
+            el : document.createElement('div'),
+            show : function(){
+                
+                ff(document.body).append(self.mask.el);
+                
+                setTimeout(function(){
+                    ff(self.mask.el).css('opacity', 1);
+                },0);
+                
+            },
+            
+            hide : function(){
+                
+                ff(self.mask.el).css('opacity', 0);
+                
+                ff(document.body).remove(self.mask.el);
+                
+            },
+            
+            init : function(){
+                var el = this.el;
+                
+                ff(el).css('position','fixed');
+                ff(el).css('left', '0');
+                ff(el).css('right', '0');
+                ff(el).css('top', '0');
+                ff(el).css('bottom', '0');
+                ff(el).css('textAlign', 'center');
+                ff(el).css('backgroundColor', 'rgba(0, 0, 0, 0.6)');
+                ff(el).css('zIndex', 999);
+                ff(el).css('opacity', 0);
+                ff(el).css('transition','opacity 1s');
+                ff(el).attr('close_window','1');
+                
+                ff(el).on('click' ,self.close);
+            }
+        };
+        this.mask.init();
+        
+        this.make_close_button = function(style){
+            
+            var close_button
+            ;
+            
+            close_button = {
+                el : document.createElement('a')
+            };
+            
+            var el = close_button.el;
+            
+            switch(style){
+                case '1':
+                    ff(el).css('display' , '');
+                    ff(el).css('color' , 'rgba(255, 255, 255, 0.9)');
+                    ff(el).css('backgroundColor' , 'rgba(0, 0, 0, 0.8)');
+                    ff(el).css('cursor' , 'pointer');
+                    ff(el).css('font-size' , '24px');
+                    ff(el).css('text-shadow' , '0 -1px rgba(0, 0, 0, 0.9)');
+                    ff(el).css('height' , '30px');
+                    ff(el).css('line-height' , '30px');
+                    ff(el).css('position' , 'absolute');
+                    ff(el).css('right' , '-15px');
+                    ff(el).css('text-align' , 'center');
+                    ff(el).css('text-decoration' , 'none');
+                    ff(el).css('top' , '-15px'); 
+                    ff(el).css('width' , '30px');
+                    ff(el).css('border-radius' , '15px');
+                  
+                    ff(el).on('mouseover',function(){
+                        ff(this).css('background-color', 'rgba(64, 128, 128, 0.8)');
+                    });
+                    
+                    ff(el).on('mouseout',function(){
+                        ff(this).css('background-color' , 'rgba(0, 0, 0, 0.8)' );
+                    });
+                    
+                    ff(el).html(EZ.icon.close);
+                    
+                    break;
+                    
+                default:
+                    ff(el).css('display' , '');
+                    ff(el).css('color' , 'gray');
+                    ff(el).css('cursor' , 'pointer');
+                    ff(el).css('font-size' , '.8rem');
+                    ff(el).css('text-shadow' , '0 -1px rgba(0, 0, 0, 0.9)');
+                    ff(el).css('position' , 'absolute');
+                    ff(el).css('text-align' , 'center');
+                    ff(el).css('text-decoration' , 'none');
+                    
+                    ff(el).css('right' , '0');
+                    ff(el).css('top' , '0'); 
+                    
+                    ff(el).css('width' , '20px');
+                    ff(el).css('height' , '20px');
+                    ff(el).css('line-height' , '20px');
+                    ff(el).css('border-radius' , '10px');
+                    
+                    ff(el).on('mouseover',function(){
+                    
+                        ff(this).css('background-color', '#DA4937');
+                        ff(this).css('color', '#fff');
+                        
+                    });
+                    
+                    ff(el).on('mouseout',function(){
+                        ff(this).removeCss('background-color');
+                        ff(this).css('color','gray');
+                    });
+                    
+                    ff(el).html(EZ.icon.close);
+                    break;
+            }
+            
+            ff(el).attr('close_window','1');
+            ff(el).on('click',self.close);
+            return close_button;
+        };
+        
+        this.close_button = this.make_close_button();
+        
+        ff(this.window.el).append(this.close_button.el);
+        ff(this.window.el).append(this.window_content.el);
+       
+       this.init();
+    };
+
+    /*
+        EZ._GET('a');
+    */
+    EZ._GET = function(key){
+        var s,_get,i,imax,d
+        ;
+        _get={};
+        
+        s= document.location.toString();
+        
+        
+        if (s.indexOf('?') == -1) {
+            return _get;
+        }
+        
+        s = s.split('?');
+        s = s[1].split('&');
+        for(i=0,imax=s.length; i<imax; i++){
+            d = s[i].split('=');
+            _get[d[0]] = d[1];
+        }
+        
+        EZ._GET = function(key){
+            return _get[key];
+        }
+        return _get[key];
     };
     
     /*
-        要先跑 init 在使用
-        EZ._GET.init();  
-        EZ._GET['a'];
-    */
-    EZ._GET = {
-        init : function(){
-            var s,_get,i,imax,d
-            ;
-            _get={};
-            
-            s= document.location.toString();
-            
-            
-            if (s.indexOf('?') == -1) {
-                return _get;
-            }
-            
-            s = s.split('?');
-            s = s[1].split('&');
-            for(i=0,imax=s.length; i<imax; i++){
-                d = s[i].split('=');
-                _get[d[0]] = d[1];
-            }
-            
-            EZ._GET = _get;
-        }
-    };
-    /*
         以上都是 function  執行程式放此之下
-        init ***********************************************
+        init 
+**********************************************************************************************
     */
     
     EZ.scriptUrl = (function() {
@@ -1825,7 +2294,7 @@ if (typeof console == 'undefined') {
             for(var i=0,imax=s.length; i<imax; i++){
                 var t = s[i];
                 t = t.split('=');
-                if(t[0] == 'load'){
+                if(t[0] == 'load' && typeof(t[1]) == 'string'){
                     var tt = t[1].split(',');
                     for(var j=0,jmax=tt.length; j<jmax; j++){
                         EZ.load(tt[j]);
@@ -1837,10 +2306,11 @@ if (typeof console == 'undefined') {
     
      
     (function(EZ){
-        var key;
-        for(key in EZ.elements){
-            if(EZ.elements.hasOwnProperty(key)){
-                EZ[key] = EZ.elements[key];
+        var method;
+        for(method in EZ.elements){
+            if(EZ.elements.hasOwnProperty(method)){
+                EZ[method] = EZ.elements[method];
+                
             }
         }
     }(EZ));
@@ -1987,6 +2457,102 @@ if (typeof console == 'undefined') {
     js.src = 'http://frankzero.com.tw/plugin/EZ/EZ.2.js';
     fjs.parentNode.insertBefore(js,fjs);
 }());
+*/
+
+
+/*
+var qq = function(){}
+qq.fn = qq.prototype = {
+	constructor: qq,
+	init: function( selector, context, rootjQuery ) {
+		
+	},
+
+	// Start with an empty selector
+	selector: "",
+
+	// The default length of a jQuery object is 0
+	length: 0,
+
+	toArray: function() {
+		return [].slice.call( this );
+	},
+
+	// Get the Nth element in the matched element set OR
+	// Get the whole matched element set as a clean array
+	get: function( num ) {
+		return num == null ?
+
+			// Return a 'clean' array
+			this.toArray() :
+
+			// Return just the object
+			( num < 0 ? this[ this.length + num ] : this[ num ] );
+	},
+
+	// Take an array of elements and push it onto the stack
+	// (returning the new matched element set)
+	pushStack: function( elems ) {
+
+		// Build a new jQuery matched element set
+		var ret = EZ.merge( this.constructor(), elems );
+
+		// Add the old object onto the stack (as a reference)
+		ret.prevObject = this;
+		ret.context = this.context;
+
+		// Return the newly-formed element set
+		return ret;
+	},
+
+	// Execute a callback for every element in the matched set.
+	// (You can seed the arguments with an array of args, but this is
+	// only used internally.)
+	each: function( callback, args ) {
+		return EZ.each( this, callback, args );
+	},
+
+	ready: function( fn ) {
+		// Add the callback
+		//jQuery.ready.promise().done( fn );
+
+		return this;
+	},
+
+	slice: function() {
+		return this.pushStack( [].slice.apply( this, arguments ) );
+	},
+
+	first: function() {
+		return this.eq( 0 );
+	},
+
+	last: function() {
+		return this.eq( -1 );
+	},
+
+	eq: function( i ) {
+		var len = this.length,
+			j = +i + ( i < 0 ? len : 0 );
+		return this.pushStack( j >= 0 && j < len ? [ this[j] ] : [] );
+	},
+
+	map: function( callback ) {
+		return this.pushStack( jQuery.map(this, function( elem, i ) {
+			return callback.call( elem, i, elem );
+		}));
+	},
+
+	end: function() {
+		return this.prevObject || this.constructor(null);
+	},
+
+	// For internal use only.
+	// Behaves like an Array's method, not like a jQuery method.
+	push: [].push,
+	sort: [].sort,
+	splice: [].splice
+};
 */
 EZ.fancybox = (new function(){
     var self=this
@@ -5365,238 +5931,3 @@ EZ.system = (new function(){
     this.init();
     
 }());
-EZ.window = function(options){
-    var self = this;
-    
-    options = options || {};
-    options.window_style = options.window_style || {};
-    options.mask_style = options.mask_style || {};
-    options.content_style = options.content_style || {};
-    options.close_button_style = options.close_button_style || {};
-    options.onopen = options.onopen || EZ.emptyFN;
-    options.onclose = options.onclose || EZ.emptyFN;
-    
-    
-    this.open = function(e){
-        options.onopen(e);
-        self.mask.show(e);
-        self.window.show(e);
-    }
-    
-    this.close = function(e){
-        options.onclose(e);
-        self.mask.hide();
-        self.window.hide();
-    }
-    
-    this.init = function(){
-        var key,v;
-        
-        for(key in options.window_style){
-            if(options.window_style.hasOwnProperty(key)){
-                this.window.el.style[key] = options.window_style[key];
-            }
-        }
-        
-        for(key in options.mask_style){
-            if(options.mask_style.hasOwnProperty(key)){
-                this.mask.el.style[key] = options.mask_style[key];
-            }
-        }
-        
-        for(key in options.content_style){
-            if(options.content_style.hasOwnProperty(key)){
-                this.window_content.el.style[key] = options.content_style[key];
-            }
-        }
-        
-        for(key in options.close_button_style){
-            if(options.close_button_style.hasOwnProperty(key)){
-                this.close_button.el.style[key] = options.close_button_style[key];
-            }
-        }
-    }
-    
-    this.mouseCoords = function (e) {
-        e = e || window.event;
-        if (e.pageX || e.pageY) {
-            return {
-                x : e.pageX,
-                y : e.pageY
-            };
-        }
-        return {
-            x : e.clientX + document.body.scrollLeft - document.body.clientLeft,
-            y : e.clientY + document.body.scrollTop - document.body.clientTop
-        };
-    }
-    
-    this.window = {
-        el : document.createElement('div'),
-        show : function(e){
-            if(typeof e == 'string' || typeof e == 'number'){
-              options.content = e;
-              self.window_content.el.innerHTML = options.content;
-            }
-            document.body.appendChild(self.window.el);
-            self.window.el.style['visibility'] = 'visible';
-            setTimeout(function(){
-                self.window.el.style['top'] = '50%';
-                self.window.el.style['opacity'] = '1';
-            },0);
-            
-        },
-        hide : function(e){
-            self.window.el.style['top'] = '40%';
-            self.window.el.style['opacity'] = '0';
-            setTimeout(function(){
-                if(self.window.el.parentNode == document.body){
-                    document.body.removeChild(self.window.el);
-                    self.window.el.style['visibility'] = 'hidden';
-                }
-            },500);
-            
-        }
-    };
-    
-    this.window.el.style['background-color'] = '#fff';
-    this.window.el.style['border'] = '3px solid #fff';
-    this.window.el.style['display'] = 'inline-block';
-    this.window.el.style['left'] = '50%';
-    this.window.el.style['padding'] = '15px';
-    this.window.el.style['position'] = 'fixed';
-    this.window.el.style['text-align'] = 'justify';
-    this.window.el.style['z-index'] = '10';
-    this.window.el.style['transform'] = 'translate(-50%, -50%)';
-    this.window.el.style['border-radius'] = '10px';
-    this.window.el.style['box-shadow'] = '0 1px 1px 2px rgba(0, 0, 0, 0.4) inset';
-    this.window.el.style['transition'] = 'opacity .5s, top .5s';
-    //this.window.el.style['-webkit-transition'] = 'opacity .5s, top .5s';
-    this.window.el.style['min-width'] = '200px';
-    this.window.el.style['min-height'] = '200px';
-    this.window.el.style['box-shadow'] = 'rgba(0, 0, 0, 0.8) 0px 4px 16px';
-    
-    this.window.el.style.zIndex='1000';
-  
-    this.window.el.style['visibility'] = 'hidden';
-    this.window.el.style['opacity'] = '0';
-    this.window.el.style['top'] = '40%';
-  
-    this.window_content = {
-        el : document.createElement('div')
-    };
-    
-    if(typeof options.content == 'object'){
-        this.window_content.el.appendChild(options.content);
-    }else if(typeof options.content == 'string'){
-        this.window_content.el.innerHTML = options.content || '';
-    }
-    
-    
-    this.mask = {
-        el : document.createElement('div'),
-        show : function(){
-            document.body.appendChild(self.mask.el);
-            setTimeout(function(){
-                self.mask.el.style.opacity='1';
-            },0);
-            
-        },
-        hide : function(){
-            self.mask.el.style.opacity='0';
-            document.body.removeChild(self.mask.el);
-            /*
-            self.mask.el.style.opacity='0';
-            setTimeout(function(){ 
-                if(self.mask.el.parentNode == document.body){
-                    document.body.removeChild(self.mask.el);
-                }
-            },1000);
-            */
-            
-        }
-    };
-    this.mask.el.style.position = 'fixed';
-    this.mask.el.style.left='0';
-    this.mask.el.style.right='0';
-    this.mask.el.style.top='0';
-    this.mask.el.style.bottom='0';
-    this.mask.el.style.textAlign='center';
-    this.mask.el.style.backgroundColor='rgba(0, 0, 0, 0.6)';
-    this.mask.el.style.zIndex='999';
-    this.mask.el.setAttribute('close_window','1');
-    this.mask.el.style.opacity='0';
-    this.mask.el.style['transition'] = 'opacity 1s';
-    this.mask.el.onclick = this.close;
-    
-    this.make_close_button = function(style){
-        
-        var close_button
-        ;
-        
-        close_button = {
-            el : document.createElement('a')
-        };
-        
-        switch(style){
-            case '1':
-                close_button.el.style.display='inline-block';
-                close_button.el.style.color='rgba(255, 255, 255, 0.9)';
-                close_button.el.style.backgroundColor='rgba(0, 0, 0, 0.8)';
-                close_button.el.style['cursor']='pointer';
-                close_button.el.style['font-size']='24px';
-                close_button.el.style['text-shadow']='0 -1px rgba(0, 0, 0, 0.9)';
-                close_button.el.style['height'] = '30px';
-                close_button.el.style['line-height'] = '30px';
-                close_button.el.style['position'] = 'absolute';
-                close_button.el.style['right'] = '-15px';
-                close_button.el.style['text-align'] = 'center';
-                close_button.el.style['text-decoration'] ='none';
-                close_button.el.style['top'] = '-15px'; 
-                close_button.el.style['width']='30px';
-                close_button.el.style['border-radius']='15px';
-              
-                close_button.el.innerHTML = 'X'; // ✖ 
-                
-                close_button.el.onmouseover = function(){this.style['background-color']='rgba(64, 128, 128, 0.8)';}
-                close_button.el.onmouseout = function(){this.style['background-color']='rgba(0, 0, 0, 0.8)';}
-                break;
-                
-            default:
-                close_button.el.style.display='inline-block';
-                close_button.el.style.color='gray';
-                //close_button.el.style.backgroundColor='rgba(0, 0, 0, 0.8)';
-                close_button.el.style['cursor']='pointer';
-                close_button.el.style['font-size']='.8rem';
-                close_button.el.style['text-shadow']='0 -1px rgba(0, 0, 0, 0.9)';
-                close_button.el.style['position'] = 'absolute';
-                close_button.el.style['text-align'] = 'center';
-                close_button.el.style['text-decoration'] ='none';
-                
-                close_button.el.style['right'] = '0';
-                close_button.el.style['top'] = '0'; 
-                
-                close_button.el.style['width'] = '20px';
-                close_button.el.style['height'] = '20px';
-                close_button.el.style['line-height'] = '20px';
-                close_button.el.style['border-radius']='10px';
-                
-                close_button.el.onmouseover = function(){this.style['background-color']='#DA4937';this.style['color']='#fff';}
-                close_button.el.onmouseout = function(){this.style['background-color']=null;this.style['color']='gray';}
-                close_button.el.innerHTML = '✖'; //  
-                break;
-        }
-        
-        close_button.el.setAttribute('close_window','1');
-        close_button.el.onclick = this.close;
-        return close_button;
-    };
-    
-    this.close_button = this.make_close_button();
-    
-    this.window.el.appendChild(this.close_button.el);
-    this.window.el.appendChild(this.window_content.el);
-   
-   
-   this.init();
-}
